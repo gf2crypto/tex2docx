@@ -1,7 +1,8 @@
 # Поведение pandoc, на которое мы опираемся и которое обходим
 
-Проверено на pandoc 3.1.3 (LaTeX reader → docx writer). При обновлении pandoc
+Проверено на pandoc 3.1.3 и 3.12.1 (LaTeX reader → docx writer). При обновлении pandoc
 перепроверить; сквозные тесты должны поймать большую часть изменений.
+У Ивана и Владимира pandoc 3.12 (Homebrew), в облаке Claude — 3.1.3; код обязан работать на обоих.
 Дописывай сюда каждую новую находку с датой.
 
 ## Теоремы (amsthm)
@@ -46,7 +47,9 @@
 ## Формулы
 
 - Выносная формула лежит внутри `Para` вместе с окружающим текстом.
-- `align` → `DisplayMath` с `\begin{aligned}...\end{aligned}`; `\label` остается внутри текста формулы.
+- `align` → `DisplayMath` с `\begin{aligned}...\end{aligned}` в pandoc 3.1; **pandoc 3.12 оставляет
+  `\begin{align}`** (и `gather`, не `gathered`). `\label` остается внутри текста формулы.
+  Фильтр `equations` принимает оба имени (2026-10-27).
 - texmath **не переводит** блок `aligned`, если в нем есть `\label`/`\notag` между строками, и тогда
   формула уходит в docx **сырым TeX-текстом** с `[WARNING] Could not convert TeX math`.
   То же для любой неизвестной команды (`unexpected control sequence \foo`).

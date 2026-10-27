@@ -9,10 +9,11 @@
 --   * The number comes from \label{x} (labels[x], computed by LaTeX; autolabel
 --     has labelled everything numbered), or from \tag{..}; \notag/\nonumber or
 --     no label at all means no number.
---   * aligned/gathered blocks (align, gather, multline, eqnarray) with at most
---     one number stay one formula; with several numbers each line becomes its
---     own paragraph with its own number (the & alignment across lines is lost;
---     reported as equations.split-lines).
+--   * Multi-line blocks (align, gather, eqnarray and their aligned/gathered
+--     forms; pandoc 3.1 rewrites align -> aligned, pandoc 3.12 keeps align)
+--     with at most one number stay one formula; with several numbers each line
+--     becomes its own paragraph with its own number (the & alignment across
+--     lines is lost; reported as equations.split-lines). multline is never split.
 --   * \label, \notag, \nonumber, \tag are removed from the math text: texmath
 --     cannot convert aligned blocks that contain them.
 --   * A Para holding display math together with text is split around it.
@@ -89,11 +90,15 @@ end
 
 local split_count = 0
 
+-- Environments whose lines can carry their own numbers.
+local LINE_ENVS = { aligned = true, gathered = true, align = true, gather = true,
+                    eqnarray = true, alignat = true, flalign = true }
+
 -- One DisplayMath -> list of blocks.
 local function render(math, labels)
   local tex = math.text
   local kind, body = tex:match('^%s*\\begin{(%a+)}(.-)\\end{%a+}%s*$')
-  if kind == 'aligned' or kind == 'gathered' then
+  if kind and LINE_ENVS[kind] then
     local lines = split_lines(body)
     local nums, cleaned, count = {}, {}, 0
     for i, ln in ipairs(lines) do
