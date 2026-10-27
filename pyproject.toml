@@ -16,6 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
+images = ["Pillow>=10"]  # BMP/TIFF/GIF pictures -> PNG (otherwise ImageMagick is tried)
 
 [project.scripts]
 tex2docx = "tex2docx.cli:main"

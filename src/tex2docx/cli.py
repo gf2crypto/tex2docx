@@ -12,7 +12,9 @@ from .pipeline import convert
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="tex2docx", description="LaTeX -> Word (.docx)")
-    p.add_argument("source", type=Path, help="main .tex file")
+    p.add_argument("source", type=Path, nargs="?", help="main .tex file")
+    p.add_argument("--check", action="store_true",
+                   help="check that pandoc, TeX Live, poppler and Python packages are in place")
     p.add_argument("-o", "--output", type=Path, help="output .docx (default: next to source)")
     p.add_argument("-c", "--config", type=Path, help="YAML config")
     p.add_argument("--engine", choices=["pdflatex", "xelatex", "lualatex"],
@@ -22,6 +24,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="do not delete the temporary working directory")
     p.add_argument("--version", action="version", version=f"tex2docx {__version__}")
     a = p.parse_args(argv)
+    if a.check:
+        from .check import main as check_main
+
+        return check_main()
+    if a.source is None:
+        p.error("source .tex file is required (or --check)")
 
     config = Config.load(a.config)
     if a.engine:

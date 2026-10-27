@@ -25,6 +25,9 @@ pip install -e '.[dev]'
 pytest -q                            # проверка, что все на месте
 ```
 
+Windows без интернета: `docs/windows-offline.md` (что скачать заранее и как проверить
+командой `tex2docx --check`).
+
 ## Использование
 
 ```sh
@@ -32,6 +35,7 @@ tex2docx paper.tex                     # → paper.docx + paper.report.md
 tex2docx paper.tex -o out/paper.docx -c examples/config.yaml
 tex2docx paper.tex --engine xelatex
 tex2docx paper.tex --workdir /tmp/wd   # оставить промежуточные файлы
+tex2docx --check                       # все ли инструменты и пакеты на месте
 ```
 
 Документ должен компилироваться (`latexmk` из каталога, где лежит `paper.tex`).

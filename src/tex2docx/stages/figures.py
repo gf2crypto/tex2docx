@@ -145,9 +145,9 @@ def resolve_graphics(ctx: Context) -> None:
                 except ToolError as e:
                     ctx.report.warn(STAGE, "figures.tool", str(e))
                     cache[name] = name
-            else:
-                cache[name] = str(path.relative_to(ctx.source_dir)) \
-                    if path.is_relative_to(ctx.source_dir) else str(path)
+            else:  # forward slashes: TeX and pandoc read '\\' in a path as a command
+                cache[name] = path.relative_to(ctx.source_dir).as_posix() \
+                    if path.is_relative_to(ctx.source_dir) else path.as_posix()
         return f"\\includegraphics{m.group(1) or ''}{{{cache[name]}}}"
 
     ctx.tex = _INCLUDE.sub(repl, ctx.tex)

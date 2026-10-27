@@ -9,6 +9,7 @@ TEXMFMAIN) nor next to the source: their definitions are what pandoc misses.
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -58,8 +59,9 @@ def personal_packages(ctx: Context) -> dict[str, Path]:
     dist.discard("")
 
     def is_distribution(p: Path) -> bool:
-        s = str(p)
-        return any(s.startswith(d) for d in dist)
+        # kpsewhich prints forward slashes and may differ in case/drive letter on Windows
+        s = os.path.normcase(str(p.resolve()))
+        return any(s.startswith(os.path.normcase(str(Path(d).resolve()))) for d in dist)
 
     queue = [name for name, _ in package_requests(ctx.tex)]
     seen: set[str] = set()
