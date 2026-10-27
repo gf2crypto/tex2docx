@@ -29,5 +29,4 @@ report_absent:
   - pandoc.math-as-text
   - crossref.unresolved
   - internal-error
-xfail_report_absent:
-  - theorem.unlabeled   # M1: stages/autolabel.py
+  - theorem.unlabeled

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from tex2docx.aux import parse_aux_text
 from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
+from tex2docx.stages.autolabel import insert_labels
 from tex2docx.stages.flatten import flatten_text
 from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
@@ -111,3 +113,93 @@ def test_collect_pandoc_messages(tmp_path: Path):
     ]
     # privacy: no document text in the report
     assert "secret" not in ctx.report.to_markdown()
+
+
+# --- autolabel ---------------------------------------------------------------
+
+THM = {"theorem", "lemma"}
+
+
+def _labels(text: str) -> list[str]:
+    return re.findall(r"\\label\{(t2d:auto:\d+)\}", text)
+
+
+def test_autolabel_theorems():
+    src = "\\begin{document}\n\\begin{theorem}[Main]\nA\n\\end{theorem}\n" \
+          "\\begin{lemma}\\label{lem:x}\nB\n\\end{lemma}\n" \
+          "\\begin{conj}\nC\n\\end{conj}\n\\end{document}"
+    out, n = insert_labels(src, THM)
+    assert n == 1
+    assert "\\begin{theorem}[Main]\\label{t2d:auto:1}\n" in out
+    assert _labels(out) == ["t2d:auto:1"]
+    assert out.count("\\label") == 2  # the lemma keeps its own label only
+
+
+def test_autolabel_equation_and_starred():
+    src = "\\begin{document}\n\\begin{equation}\na=b\n\\end{equation}\n" \
+          "\\begin{equation*}\nc=d\n\\end{equation*}\n\\[ e=f \\]\n" \
+          "\\begin{equation}\\label{eq:own} g=h \\end{equation}\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 1
+    assert "\\begin{equation}\\label{t2d:auto:1}\na=b" in out
+    assert "equation*}\\label" not in out
+
+
+def test_autolabel_align_lines():
+    src = "\\begin{document}\n\\begin{align}\n" \
+          "a &= \\begin{cases} 1, & x \\\\ 2, & y \\end{cases}, \\\\\n" \
+          "b &= c, \\notag \\\\\n" \
+          "d &= e, \\label{eq:d} \\\\\n" \
+          "f &= \\substack{1 \\\\ 2}, \\\\[2pt]\n" \
+          "g &= h.\n" \
+          "\\end{align}\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 3
+    assert "\\end{cases}, \\label{t2d:auto:1}\\\\\n" in out
+    assert "\\notag \\\\\n" in out and "\\label{eq:d} \\\\\n" in out
+    assert "2}, \\label{t2d:auto:2}\\\\[2pt]\n" in out
+    assert "g &= h.\\label{t2d:auto:3}\n\\end{align}" in out
+
+
+def test_autolabel_align_trailing_linebreak_and_star():
+    src = "\\begin{document}\n\\begin{gather}\na \\\\\nb \\\\\n\\end{gather}\n" \
+          "\\begin{align*}\nc \\\\ d\n\\end{align*}\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 3  # amsmath numbers the empty line after the trailing \\\\ as well
+    assert "b \\label{t2d:auto:2}\\\\\\label{t2d:auto:3}\n\\end{gather}" in out
+    assert "align*" in out and "d\\label" not in out
+
+
+def test_autolabel_floats():
+    src = "\\begin{document}\n\\begin{figure}\n\\caption{One}\n\\end{figure}\n" \
+          "\\begin{figure*}\n\\caption{Two \\label{fig:two}}\n\\end{figure*}\n" \
+          "\\begin{table}\n\\caption{Three}\\label{tab:3}\n\\end{table}\n" \
+          "\\begin{figure}\nno caption\n\\end{figure}\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 1
+    assert "\\caption{One}\\label{t2d:auto:1}\n" in out
+
+
+def test_autolabel_skips_verbatim_and_preamble():
+    src = "\\newtheorem{theorem}{T}\n\\begin{document}\n" \
+          "\\begin{verbatim}\n\\begin{equation}\nx\n\\end{equation}\n\\end{verbatim}\n" \
+          "\\begin{theorem}\nA\n\\end{theorem}\n\\end{document}"
+    out, n = insert_labels(src, THM)
+    assert n == 1
+    assert "\\begin{equation}\nx" in out
+
+
+def test_autolabel_nested_equation_in_theorem():
+    src = "\\begin{document}\n\\begin{theorem}\nA\n\\begin{equation}\\label{eq:in}\nx\n" \
+          "\\end{equation}\n\\end{theorem}\n\\end{document}"
+    out, n = insert_labels(src, THM)
+    assert n == 1  # the equation's label does not count as the theorem's
+    assert "\\begin{theorem}\\label{t2d:auto:1}\n" in out
+
+
+def test_autolabel_subequations_source_order():
+    src = "\\begin{document}\n\\begin{subequations}\n\\begin{equation} n \\end{equation}\n" \
+          "\\end{subequations}\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 2
+    assert "\\begin{subequations}\\label{t2d:auto:1}\n\\begin{equation}\\label{t2d:auto:2} n" in out

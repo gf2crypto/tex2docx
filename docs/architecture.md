@@ -14,7 +14,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 | Этап | Файл | Что делает | Статус |
 |---|---|---|---|
 | flatten | `stages/flatten.py` | склейка `\input`/`\include`, пустые строки вместо строк-комментариев | готов |
-| autolabel | `stages/autolabel.py` | метки для всех нумеруемых объектов | M1 |
+| autolabel | `stages/autolabel.py` | `\label{t2d:auto:N}` для нумеруемых объектов без метки | готов |
 | latex | `stages/latex_compile.py` | latexmk → `.aux` → `ctx.labels` | готов |
 | theorems | `stages/theorems.py` | `\newtheorem`, `\theoremstyle` → `ctx.theorems` | готов (amsthm) |
 | normalize | `stages/normalize.py` | бабелевские сокращения в `ctx.tex` | готов |
