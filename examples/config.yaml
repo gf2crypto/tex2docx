@@ -27,7 +27,7 @@ macros:
   '\code': '\mathcal'
 
 # Окружения, которые рендерятся картинками через пакет preview.
-figure_envs: [tikzpicture]
+figure_envs: [tikzpicture, algorithm, algorithmic]
 figure_dpi: 300
 
 # Формула, которую pandoc не смог перевести в формулу Word:

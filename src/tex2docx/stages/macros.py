@@ -9,7 +9,9 @@ Status: implemented (M2).
   \\theoremstyle / \\newtheorem verbatim (pandoc builds theorem blocks from them).
   Definitions whose name or body uses internal names (with @) or #-parameters
   in \\def are not copied and go to the report (macros.skipped), so the author
-  can override them in the config.
+  can override them in the config. A file with many definitions or mostly
+  internal ones is a library, not the author's macros: skipped as a whole
+  (macros.library).
 - Manual overrides from config (`macros:`) are injected as \\renewcommand right
   after \\begin{document} and win over everything.
 - pandoc itself reads \\newcommand from the document and from .sty files lying
@@ -26,6 +28,9 @@ from ..texmf import package_requests, personal_packages
 from ..texscan import read_group, read_optional, skip_ws
 
 STAGE = "macros"
+# A file with this many definitions, or mostly internal ones, is a library (biblatex,
+# algorithmicx, ...) rather than the author's macros: nothing is copied from it.
+LIBRARY_DEFS = 150
 _NAME = re.compile(r"^\\[A-Za-z]+$")
 _DEF = re.compile(
     r"(?<!\\)\\(newcommand|renewcommand|providecommand|DeclareMathOperator|def"
@@ -115,6 +120,9 @@ def inject_definitions(text: str, packages: dict[str, Path], ctx: Context) -> st
         for req, _ in package_requests(src):
             out.extend(defs_for(req))
         defs, skipped = extract_definitions(src)
+        if len(defs) + len(skipped) > LIBRARY_DEFS or len(skipped) > len(defs):
+            ctx.report.info(STAGE, "macros.library", f"{name}:{len(defs)}+{len(skipped)}")
+            return out
         for s in skipped:
             ctx.report.warn(STAGE, "macros.skipped", f"{name}:{s}")
         if defs:

@@ -1,0 +1,19 @@
+% Синтетический кейс по мотивам университетского шаблона: текст подключается макросом
+% \Source из config.tex, комментарий внутри \newcommand, description, картинка без
+% расширения через \graphicspath, алгоритм (algorithmic). Реальных статей в корпусе нет.
+\input{config.tex}
+\documentclass[12pt,\Status]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\DeclareGraphicsExtensions{.pdf,.png}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\newtheorem{theorem}{Теорема}[section]
+
+\begin{document}
+\Source
+\end{document}

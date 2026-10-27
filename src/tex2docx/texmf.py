@@ -33,6 +33,12 @@ def package_requests(text: str) -> list[tuple[str, str]]:
     return out
 
 
+def expand_braces(value: str) -> list[str]:
+    """kpathsea value '{/a,/b}' or '!!/a' -> ['/a', '/b']."""
+    value = value.strip().strip("{}")
+    return [v.strip().lstrip("!") for v in value.split(",") if v.strip()]
+
+
 def personal_packages(ctx: Context) -> dict[str, Path]:
     """Resolve once: file name -> path, for files outside the distribution and the source dir.
 
@@ -43,7 +49,9 @@ def personal_packages(ctx: Context) -> dict[str, Path]:
     ctx.packages = {}
     env = tex_env(ctx.source_dir)
     try:
-        dist = {texmf_var(v, cwd=ctx.source_dir, env=env) for v in ("TEXMFDIST", "TEXMFMAIN")}
+        dist: set[str] = set()
+        for v in ("TEXMFDIST", "TEXMFMAIN"):
+            dist.update(expand_braces(texmf_var(v, cwd=ctx.source_dir, env=env)))
     except ToolError as e:
         ctx.report.warn("macros", "macros.tool", str(e))
         return ctx.packages

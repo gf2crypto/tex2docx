@@ -24,7 +24,8 @@ from ..tools import run as run_tool
 from . import StageError, mathimg
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "equations.lua", "mathimg.lua"]  # order matters
+FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "lists.lua", "equations.lua",
+           "mathimg.lua"]  # order matters
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
@@ -82,6 +83,22 @@ HARMLESS_SKIPS = {
     "\\theorembodyfont", "\\theoremheaderfont", "\\theoremsymbol", "\\theoremseparator",
     "\\theoremindent", "\\theorempreskip", "\\theorempostskip", "\\theoremnumbering",
     "\\theoremprework", "\\theorempostwork", "\\declaretheoremstyle", "\\qedsymbol",
+    # page layout, spacing, fonts and colors: Word styles decide the look
+    "\\setlength", "\\addtolength", "\\vspace", "\\vspace*", "\\hspace", "\\hspace*",
+    "\\hfil", "\\hfill", "\\vfill", "\\linewidth", "\\textwidth", "\\pagestyle",
+    "\\thispagestyle", "\\linespread", "\\onehalfspacing", "\\doublespacing", "\\singlespacing",
+    "\\OnehalfSpacing", "\\DoubleSpacing", "\\SingleSpacing", "\\counterwithout", "\\counterwithin",
+    "\\setsecnumdepth", "\\maxtocdepth", "\\settocdepth", "\\DeclareGraphicsExtensions",
+    "\\graphicspath", "\\definecolor", "\\color", "\\textcolor", "\\colorlet", "\\pagecolor",
+    "\\tiny", "\\scriptsize", "\\footnotesize", "\\small", "\\normalsize", "\\large",
+    "\\Large", "\\LARGE", "\\huge", "\\Huge", "\\bgroup", "\\egroup", "\\raggedright",
+    "\\raggedleft", "\\sloppy", "\\fussy", "\\frenchspacing", "\\nonfrenchspacing",
+    # memoir page design
+    "\\settrimmedsize", "\\settypeblocksize", "\\setlrmarginsandblock", "\\setulmarginsandblock",
+    "\\setmarginnotes", "\\setheadfoot", "\\setheaderspaces", "\\checkandfixthelayout",
+    "\\makepagestyle", "\\makeevenhead", "\\makeoddhead", "\\makeevenfoot", "\\makeoddfoot",
+    "\\aliaspagestyle", "\\makerunningwidth", "\\makeheadrule", "\\makefootrule",
+    "\\nouppercaseheads", "\\chapterstyle", "\\setsecheadstyle", "\\setsubsecheadstyle",
 }
 
 

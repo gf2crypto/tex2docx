@@ -1,6 +1,9 @@
 """Stage 7: render figure environments to PNG with the document's own preamble.
 
-Status: implemented (M0) for environments listed in config.figure_envs.
+Status: implemented (M0) for environments listed in config.figure_envs;
+M2: algorithm/algorithmic by default (pseudocode has no Word counterpart),
+\\includegraphics without extension or in \\graphicspath resolved the way
+LaTeX does, PDF/EPS images rasterized (Word cannot show them).
 
 How: insert the preview package before \\begin{document} in a copy of
 ctx.latex_tex, compile -> one PDF page per environment (in source order),
@@ -12,6 +15,7 @@ replaced and the report says so (wrong pictures are worse than none).
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 from ..context import Context
 from ..tools import ToolError, latexmk, log_errors, require
@@ -25,7 +29,69 @@ def _env_regex(envs: list[str]) -> re.Pattern[str]:
     return re.compile(r"\\begin\{(" + alt + r")\}.*?\\end\{\1\}", re.S)
 
 
+_GRAPHICSPATH = re.compile(r"(?<!\\)\\graphicspath\s*\{((?:\s*\{[^{}]*\}\s*)+)\}")
+_EXTENSIONS = re.compile(r"(?<!\\)\\DeclareGraphicsExtensions\s*\{([^{}]*)\}")
+_INCLUDE = re.compile(r"(?<!\\)\\includegraphics\s*(\[[^\]]*\])?\s*\{([^{}]+)\}")
+DEFAULT_EXTS = [".pdf", ".png", ".jpg", ".jpeg", ".eps", ".PNG", ".JPG"]
+
+
+def resolve_graphics(ctx: Context) -> None:
+    """Rewrite \\includegraphics{name} in ctx.tex to a path pandoc can open."""
+    paths = [""]
+    for m in _GRAPHICSPATH.finditer(ctx.tex):
+        paths += re.findall(r"\{([^{}]*)\}", m.group(1))
+    exts = DEFAULT_EXTS
+    m = _EXTENSIONS.search(ctx.tex)
+    if m:
+        exts = [e.strip() for e in m.group(1).split(",") if e.strip()] + exts
+    d = ctx.workdir / "figures"
+    cache: dict[str, str] = {}
+
+    def find(name: str) -> Path | None:
+        for base in paths:
+            cand = ctx.source_dir / base / name
+            if cand.is_file():
+                return cand
+            if not cand.suffix or cand.suffix not in exts:
+                for e in exts:
+                    if (p := Path(str(cand) + e)).is_file():
+                        return p
+        return None
+
+    def repl(m: re.Match[str]) -> str:
+        name = m.group(2).strip()
+        if name.startswith("figures/"):
+            return m.group(0)  # our own rendered picture
+        if name not in cache:
+            path = find(name)
+            if path is None:
+                ctx.report.warn(STAGE, "figures.missing", name)
+                cache[name] = name
+            elif path.suffix.lower() in (".pdf", ".eps"):
+                d.mkdir(exist_ok=True)
+                out = d / f"img-{len(cache)}"
+                try:
+                    run_tool([require("pdftoppm"), "-r", str(ctx.config.figure_dpi), "-png",
+                              "-singlefile", str(path), str(out)], cwd=ctx.workdir)
+                    cache[name] = f"figures/{out.name}.png"
+                    ctx.report.info(STAGE, "figures.rasterized", name)
+                except ToolError as e:
+                    ctx.report.warn(STAGE, "figures.tool", str(e))
+                    cache[name] = name
+            else:
+                cache[name] = str(path.relative_to(ctx.source_dir)) \
+                    if path.is_relative_to(ctx.source_dir) else str(path)
+        return f"\\includegraphics{m.group(1) or ''}{{{cache[name]}}}"
+
+    ctx.tex = _INCLUDE.sub(repl, ctx.tex)
+
+
 def run(ctx: Context) -> None:
+    render_environments(ctx)
+    resolve_graphics(ctx)
+
+
+def render_environments(ctx: Context) -> None:
     envs = ctx.config.figure_envs
     if not envs:
         return

@@ -34,7 +34,7 @@ class Config:
     # Manual macro overrides: {"\\matr": "\\mathbf"}. Applied before pandoc.
     macros: dict[str, str] = field(default_factory=dict)
     # Environments rendered as pictures via the preview package.
-    figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture"])
+    figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture", "algorithm", "algorithmic"])
     figure_dpi: int = 300
     # Formula texmath cannot convert: "image" (rendered by LaTeX, see stages/mathimg.py)
     # or "text" (left as raw TeX, as pandoc does).

@@ -16,7 +16,7 @@ from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
 from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls, theorems_to_amsthm
-from tex2docx.texmf import package_requests
+from tex2docx.texmf import expand_braces, package_requests
 from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
 # --- texscan -----------------------------------------------------------------
@@ -35,7 +35,7 @@ def test_strip_tex():
 
 def test_blank_comment_lines_keeps_numbering():
     s = "a\n  % c\nb % trailing stays\n"
-    assert blank_comment_lines(s) == "a\n\nb % trailing stays\n"
+    assert blank_comment_lines(s) == "a\n%\nb % trailing stays\n"
 
 
 def test_babel_languages():
@@ -119,13 +119,25 @@ def test_flatten_inputs_and_line_map(tmp_path: Path):
     r = Report()
     src = "x \\input{sec/a} y\n%\\input{gone}\nz \\include{missing}"
     lines, origins = flatten_lines(src, tmp_path, r, "main.tex")
-    assert lines == ["x ", "A1", "A2 ", "B", "", " y", "", "z \\include{missing}"]
+    assert lines == ["x ", "A1", "A2 ", "B", "", " y", "%", "z \\include{missing}"]
     assert origins == [("main.tex", 1), ("sec/a.tex", 1), ("sec/a.tex", 2), ("sec/b.tex", 1),
                        ("sec/a.tex", 2), ("main.tex", 1), ("main.tex", 2), ("main.tex", 3)]
     assert [(i.code, i.line) for i in r.items] == [("flatten.missing-input", 8)]
     r.line_map, r.main_file = origins, "main.tex"
     assert r.locate(2) == "sec/a.tex:1" and r.locate(6) == "1" and r.locate(99) == "99"
     assert flatten_text(src, tmp_path, Report()) == "\n".join(lines)
+
+
+def test_flatten_include_macro(tmp_path: Path):
+    (tmp_path / "a.tex").write_text("A", encoding="utf-8")
+    (tmp_path / "b.tex").write_text("B", encoding="utf-8")
+    src = "\\newcommand*{\\Source}{\n  \\include{a}\n  \\include{b}\n}\n\\begin{document}\n\\Source\n\\end{document}"
+    lines, origins = flatten_lines(src, tmp_path, Report(), "main.tex")
+    assert lines[0] == "\\newcommand*{\\Source}{}" and lines[1:4] == ["", "", ""]
+    assert "A" in lines and "B" in lines
+    assert lines.index("A") > lines.index("\\begin{document}")
+    assert origins[lines.index("A")] == ("a.tex", 1)
+    assert len(lines) == len(origins)
 
 
 # --- normalize ---------------------------------------------------------------
@@ -212,6 +224,11 @@ def test_extract_definitions():
         r"\newtheorem*{note}{Note}",
     ]
     assert skipped == [r"\pair", r"\@secret", r"\usesecret"]
+
+
+def test_expand_braces():
+    assert expand_braces("{/a/texmf-dist,!!/b}") == ["/a/texmf-dist", "/b"]
+    assert expand_braces("/usr/share/texmf") == ["/usr/share/texmf"]
 
 
 def test_package_requests():

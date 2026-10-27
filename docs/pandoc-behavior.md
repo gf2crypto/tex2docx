@@ -47,7 +47,17 @@
   подформул (1.9a, 1.9b) теряются. Поэтому `normalize` снимает обертку `subequations`,
   а внутренние окружения нумеруются своими метками (кейс `numbering`).
 
+## Списки
+
+- `description` → `DefinitionList` → в docx термин на отдельной строке стилем `Definition Term`,
+  а текст — стилем `Definition` (тем же именем, что у теорем-определений). Фильтр `lists` делает
+  из пункта один абзац «**термин** текст», как в LaTeX.
+
 ## Рисунки и таблицы
+
+- `\includegraphics{name}` без расширения и `\graphicspath` pandoc не разрешает (`Could not fetch
+  resource`, в тексте остается слово «image»); PDF-картинки в docx не вставляет. Этап `figures`
+  находит файл как LaTeX и растрирует PDF/EPS.
 
 - `figure` с `\caption{}\label{x}` → `Figure(id=x, Caption)`; `table` → `Div(id=x)[Table(Caption)]`.
   Writer docx печатает только текст подписи, без «Рис. 1» — префикс ставит фильтр `captions`.
