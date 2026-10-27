@@ -1,0 +1,44 @@
+% Синтетический кейс: теоремы через ntheorem (без amsthm), в т.ч. \newframedtheorem.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{framed}
+\usepackage[amsmath,thmmarks,framed]{ntheorem}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{lemma}[theorem]{Лемма}
+\theorembodyfont{\upshape}
+\newtheorem{definition}[theorem]{Определение}
+\newframedtheorem{framedclaim}[theorem]{Утверждение}
+\theoremstyle{nonumberplain}
+\theoremsymbol{\ensuremath{\square}}
+\newtheorem{proof}{Доказательство}
+
+\begin{document}
+
+\section{Теоремы ntheorem}
+
+\begin{definition}\label{def:n}
+Определение ntheorem.
+\end{definition}
+
+\begin{theorem}[Главная]\label{thm:n}
+Теорема ntheorem.
+\end{theorem}
+
+\begin{proof}
+По определению~\ref{def:n}.
+\end{proof}
+
+\begin{lemma}
+Лемма без метки.
+\end{lemma}
+
+\begin{framedclaim}
+Утверждение в рамке.
+\end{framedclaim}
+
+\end{document}

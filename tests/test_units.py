@@ -15,7 +15,7 @@ from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
 from tex2docx.stages.postprocess import W, nbsp_text, process_document
-from tex2docx.stages.theorems import scan_decls
+from tex2docx.stages.theorems import scan_decls, theorems_to_amsthm
 from tex2docx.texmf import package_requests
 from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
@@ -78,6 +78,36 @@ def test_scan_decls_styles_counters():
     assert d["lemma"].counter == "theorem"
     assert d["conj"].numbered is False
     assert d["definition"].style == "definition"
+
+
+def test_scan_decls_thmtools_and_ntheorem():
+    src = r"""
+\declaretheorem[name=Теорема, numberwithin=section]{theorem}
+\declaretheorem[name={Лемма}, sibling=theorem, style=definition]{lemma}
+\declaretheorem[style=remark, numbered=no]{remark}
+\declaretheorem{claim}
+\newframedtheorem{boxed}{Рамка}
+\theoremstyle{nonumberplain}
+\newtheorem{proof}{Доказательство}
+\theoremstyle{break}
+\newtheorem{note}{Заметка}
+"""
+    d, _ = scan_decls(src)
+    assert d["proof"].numbered is False and d["proof"].style == "plain"
+    assert d["note"].numbered is True and d["note"].style == "plain"
+    assert d["theorem"].title == "Теорема" and d["theorem"].within == "section"
+    assert d["lemma"].counter == "theorem" and d["lemma"].style == "definition"
+    assert d["remark"].numbered is False and d["remark"].style == "remark"
+    assert d["claim"].title == "Claim"
+    assert d["boxed"].title == "Рамка"
+    out = theorems_to_amsthm(src)
+    assert r"\newtheorem{boxed}{Рамка}" in out
+    assert "\\theoremstyle{plain}\n\\newtheorem*{proof}{Доказательство}" in out
+    assert "\\theoremstyle{plain}\n\\newtheorem{note}{Заметка}" in out
+    assert r"\theoremstyle{plain}\newtheorem{theorem}{Теорема}[section]" in out
+    assert r"\theoremstyle{definition}\newtheorem{lemma}[theorem]{Лемма}" in out
+    assert r"\theoremstyle{remark}\newtheorem*{remark}{Remark}" in out
+    assert out.count("\n") == src.count("\n")
 
 
 # --- flatten -----------------------------------------------------------------

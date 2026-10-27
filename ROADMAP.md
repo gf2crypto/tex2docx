@@ -29,13 +29,13 @@
 - [x] Подписи рисунков и таблиц с номером: «Рис. 1. Окружность» (имя из babel/конфига).
 - [x] Кейс корпуса `numbering`: `\numberwithin`, общие счетчики, `\newtheorem*`, `\tag`, `subequations`.
 
-## M2 — устойчивость на чужих документах
+## M2 — устойчивость на чужих документах (готово)
 
 - [x] `macros`: определения (и `\newtheorem`) из пакетов и классов, найденных через `kpsewhich`
       вне дистрибутива (личный texmf); кейс `texmfhome`.
 - [x] Формула, которую pandoc не смог перевести → картинка через `preview` (`math_fallback`); кейс `mathimage`.
 - [x] Отображение строк отчета на исходные файлы (`ctx.line_map`; этапы сохраняют число строк).
-- [ ] thmtools (`\declaretheorem`), ntheorem.
+- [x] thmtools (`\declaretheorem`), ntheorem (стили `nonumber*`, `\newframedtheorem`); кейсы `thmtools`, `ntheorem`.
 - [x] Кейс корпуса: документ из нескольких файлов (`multifile`).
 - [x] Кейсы корпуса: `amsart`, `cleveref` (hyperref + `\cref`/`\Cref`/`\crefrange`/`\autoref`
       с именами из cleveref и `\crefname`), `xelatex` (fontspec + polyglossia + unicode-math).

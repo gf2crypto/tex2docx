@@ -84,7 +84,7 @@ function Pandoc(doc)
       if cmd == 'cref' or cmd == 'Cref' or cmd == 'crefrange' or cmd == 'Crefrange' then
         text = smart(split(rest), cmd:sub(1, 1) == 'C', cmd:find('range') ~= nil)
         if text then el.target = '#' .. split(rest)[1] end
-      elseif kind == 'autoref' then
+      elseif kind == 'autoref' or kind == 'ref+label' then  -- pandoc 3.1 / 3.12
         text = smart({ ref }, false, false)
       else
         local num = labels[ref]

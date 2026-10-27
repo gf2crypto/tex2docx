@@ -78,6 +78,10 @@ HARMLESS_SKIPS = {
     "\\maketitle", "\\centering", "\\numberwithin", "\\theoremstyle",
     "\\NeedsTeXFormat", "\\ProvidesPackage", "\\ProvidesFile", "\\noindent",
     "\\bigskip", "\\medskip", "\\smallskip", "\\newpage", "\\clearpage",
+    # ntheorem / thmtools presentation settings: the Word styles decide the look
+    "\\theorembodyfont", "\\theoremheaderfont", "\\theoremsymbol", "\\theoremseparator",
+    "\\theoremindent", "\\theorempreskip", "\\theorempostskip", "\\theoremnumbering",
+    "\\theoremprework", "\\theorempostwork", "\\declaretheoremstyle", "\\qedsymbol",
 }
 
 

@@ -5,6 +5,8 @@ pandoc renders '"---' as a literal quote plus dash; LaTeX never shows the quote.
 M1: alignat/flalign become align (pandoc leaves alignat's column count in the
 formula text and does not know flalign at all); numbering is the same.
 \\cref/\\Cref become \\ref{cref:...} for crossref.lua (pandoc would lose the distinction).
+Theorem declarations of thmtools and ntheorem are rewritten into plain amsthm
+(stages/theorems.theorems_to_amsthm): pandoc knows only amsthm.
 The subequations wrapper is removed (pandoc folds it into one formula): the
 inner environments keep their labels and LaTeX has already numbered them 2.3a,
 2.3b; references to the wrapper's own label resolve through the .aux anyway.
@@ -15,6 +17,7 @@ from __future__ import annotations
 import re
 
 from ..context import Context
+from .theorems import theorems_to_amsthm
 
 STAGE = "normalize"
 
@@ -52,7 +55,7 @@ CREF: list[tuple[str, str]] = [
 def normalize_text(text: str) -> str:
     for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF:
         text = re.sub(pat, rep, text)
-    return text
+    return theorems_to_amsthm(text)
 
 
 def run(ctx: Context) -> None:
