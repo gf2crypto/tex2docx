@@ -14,6 +14,7 @@ class Label:
     name: str
     number: str  # exactly as LaTeX printed it, e.g. "1.2" or "(i)"
     page: str = ""
+    cref_type: str = ""  # counter name from cleveref's name@cref entry, e.g. "theorem"
 
 
 @dataclass
@@ -40,8 +41,15 @@ class Context:
     # Stages that change structure (autolabel) must change both in the same way.
     latex_tex: str = ""
     tex: str = ""
+    # Origin of every line of the flattened text: (file relative to source_dir, line).
+    # Stages must keep the line count of both views so that this stays valid.
+    line_map: list[tuple[str, int]] = field(default_factory=list)
 
+    # Personal packages/classes (outside the TeX distribution and the source dir),
+    # name -> path; filled once by texmf.personal_packages(). None = not resolved yet.
+    packages: dict[str, Path] | None = None
     labels: dict[str, Label] = field(default_factory=dict)  # from .aux
+    bibcites: dict[str, str] = field(default_factory=dict)  # \bibcite key -> number (thebibliography)
     theorems: dict[str, TheoremDecl] = field(default_factory=dict)
     figures: list[Path] = field(default_factory=list)  # rendered images, source order
     docx: Path | None = None  # pandoc output before postprocessing

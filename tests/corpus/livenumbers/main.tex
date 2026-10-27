@@ -1,0 +1,88 @@
+% Синтетический тестовый документ: базовые конструкции математической статьи.
+% Реальных статей в корпусе нет и быть не должно (см. CLAUDE.md).
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{tikz}
+\usepackage{localmacros}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{lemma}[theorem]{Лемма}
+\newtheorem*{conjecture}{Гипотеза}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Определение}
+\theoremstyle{remark}
+\newtheorem{remark}{Замечание}
+
+\numberwithin{equation}{section}
+
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\wt}[1]{\operatorname{wt}(#1)}
+\DeclareMathOperator{\rank}{rank}
+
+\title{Тестовый документ}
+\author{Корпус tex2docx}
+
+\begin{document}
+\maketitle
+
+\section{Введение}\label{sec:intro}
+
+Пусть $\code{C} \subseteq \F_q^n$ "--- линейный код с порождающей
+матрицей~$\matr{G}$, а $\vect{x}$ "--- вектор.
+
+\begin{definition}\label{def:square}
+Квадратом Шура--Адамара кода $\code{C}$ называется код
+\begin{equation}\label{eq:square}
+  \code{C}^{\star 2} = \langle \vect{c} \star \vect{c}' \mid
+  \vect{c}, \vect{c}' \in \code{C} \rangle .
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Основная]\label{thm:main}
+Для случайного кода $\code{C}$ размерности $k$ с большой вероятностью
+\[
+  \dim \code{C}^{\star 2} = \min\left\{n, \binom{k+1}{2}\right\}.
+\]
+\end{theorem}
+
+\begin{proof}
+Следует из~\eqref{eq:square} и леммы~\ref{lem:aux}.
+\end{proof}
+
+\begin{lemma}\label{lem:aux}
+Если $\rank \matr{G} = k$, то $\wt{\vect{x}} \le n$.
+\end{lemma}
+
+\begin{conjecture}
+Утверждение теоремы~\ref{thm:main} верно для любого $q$.
+\end{conjecture}
+
+\section{Выкладки}\label{sec:calc}
+
+\begin{align}
+  a &= b + c, \label{eq:first}\\
+  d &= e \cdot f. \notag\\
+  g &= h. \label{eq:third}
+\end{align}
+
+\begin{remark}
+Формулы~\eqref{eq:first} и~\eqref{eq:third} пронумерованы, средняя "--- нет.
+\end{remark}
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}
+    \draw[->] (0,0) -- (2,0) node[right] {$x$};
+    \draw[->] (0,0) -- (0,2) node[above] {$y$};
+    \draw (0,0) circle (1);
+  \end{tikzpicture}
+  \caption{Окружность}\label{fig:circle}
+\end{figure}
+
+На рис.~\ref{fig:circle} изображена окружность (см. раздел~\ref{sec:intro}).
+
+\end{document}

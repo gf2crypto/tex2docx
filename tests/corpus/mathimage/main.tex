@@ -1,0 +1,21 @@
+% Синтетический кейс: формулы, которые texmath не переводит (\sideset, \prescript,
+% \smash, tikz в формуле), должны стать картинками с преамбулой документа.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,mathtools,tikz}
+\newcommand{\myvec}[1]{\mathbf{#1}}
+
+\begin{document}
+
+Обычная формула $\myvec{x}^2$ остается формулой Word.
+Сумма с индексами по бокам $\sideset{_a}{^b}\sum_{i}$ и
+предындексы $\prescript{a}{b}{\myvec{X}}$ станут картинками.
+\begin{equation}\label{eq:pic}
+  \smash{\myvec{y}} = \sideset{}{'}\sum_{k=1}^{n} \myvec{x}_k .
+\end{equation}
+Та же самая конструкция $\prescript{a}{b}{\myvec{X}}$ второй раз — та же картинка.
+См.~\eqref{eq:pic}.
+
+\end{document}

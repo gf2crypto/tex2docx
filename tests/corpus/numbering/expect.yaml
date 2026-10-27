@@ -1,0 +1,33 @@
+# Нумерация как в LaTeX: общие счетчики, \numberwithin, \newtheorem*, \tag, subequations.
+contains:
+  - "1 Первый раздел"
+  - "2 Второй раздел"
+  - "Определение 1."          # свой счетчик, не по разделам
+  - "Теорема 1.1."            # без метки: номер через autolabel
+  - "Определение 2."
+  - "Теорема 2.1."
+  - "Предложение 2.2."        # общий счетчик с теоремой
+  - "Обозначение."            # \newtheorem*: без номера
+  - "\t(1.1)"
+  - "\t(2.1)"                 # строки align без меток
+  - "\t(2.2)"
+  - "\t(A)"                   # \tag{A}
+  - "\tB"                     # \tag*{B}
+  - "\t(2.3a)"                # subequations
+  - "\t(2.3b)"
+  - "\t(2.4)"                 # multline: один номер
+  - "определение 2, теорема 2.1, формулы (A),"
+  - "(2.3), (2.3a), (2.3b) и (2.4)."
+not_contains:
+  - "Обозначение 1"
+  - "Предложение 3"           # так нумеровал бы pandoc (свой счетчик)
+  - "[eq:"
+math_min: 8
+styles: [Theorem, Definition, Equation]
+report_absent:
+  - pandoc.math-as-text
+  - crossref.unresolved
+  - equations.unresolved
+  - captions.unresolved
+  - theorem.unlabeled
+  - internal-error

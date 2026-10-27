@@ -6,9 +6,12 @@
 - теоремы, леммы, определения, доказательства — абзацы со своими стилями Word;
 - номера теорем, формул и ссылок — **ровно как в PDF**: берутся из `.aux` настоящего LaTeX;
 - рисунки (TikZ и др.) — картинками, отрисованными с преамбулой документа;
+- библиография: `.bib` → список по ГОСТ Р 7.0.5 (citeproc, офлайн), `thebibliography` → список с номерами из LaTeX;
+- по желанию — живые номера: поля Word SEQ/REF, пересчитываются после правок (`live_numbers`);
 - отчет обо всем, что передано неточно, **без текста документа** — его можно пересылать.
 
-Состояние: каркас (M0), см. `ROADMAP.md`.
+Состояние: M0 (каркас), M1 (нумерация как в LaTeX), M2 (устойчивость: личные пакеты,
+формулы-картинки, thmtools/ntheorem, cleveref) готовы; M3 (полировка Word) частично. См. `ROADMAP.md`.
 
 ## Установка (macOS)
 
@@ -22,6 +25,9 @@ pip install -e '.[dev]'
 pytest -q                            # проверка, что все на месте
 ```
 
+Windows без интернета: `docs/windows-offline.md` (что скачать заранее и как проверить
+командой `tex2docx --check`); переносимая папка без установщиков — `docs/windows-portable.md`.
+
 ## Использование
 
 ```sh
@@ -29,9 +35,13 @@ tex2docx paper.tex                     # → paper.docx + paper.report.md
 tex2docx paper.tex -o out/paper.docx -c examples/config.yaml
 tex2docx paper.tex --engine xelatex
 tex2docx paper.tex --workdir /tmp/wd   # оставить промежуточные файлы
+tex2docx --check                       # все ли инструменты и пакеты на месте
 ```
 
 Документ должен компилироваться (`latexmk` из каталога, где лежит `paper.tex`).
+Личные пакеты из `~/texmf` (или `~/Library/texmf`) конвертер находит сам через `kpsewhich`
+и переносит из них макросы и `\newtheorem`; что перенести не удалось, перечислено в отчете
+(`macros.skipped`) — такие макросы можно подменить в конфиге (`macros:`).
 
 ## Отчет
 
@@ -45,7 +55,8 @@ tex2docx paper.tex --workdir /tmp/wd   # оставить промежуточн
 ручная подмена макросов, окружения-рисунки.
 
 Свой шаблон стилей: скопируйте `src/tex2docx/data/reference.docx`, поменяйте стили в Word
-(имена стилей Theorem, Definition, Remark, Proof не трогайте) и укажите в `reference_docx`.
+(имена стилей Theorem, Definition, Remark, Proof, Equation, Centered, Right Aligned, Left Aligned не трогайте) и укажите в `reference_docx`.
+У стиля Equation два табулятора — центральный и правый; при другой ширине текста поправьте их.
 
 ## Разработка
 

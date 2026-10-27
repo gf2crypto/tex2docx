@@ -1,0 +1,19 @@
+% Имитация личного пакета из ~/texmf: pandoc его не видит, LaTeX находит через kpsewhich.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mymath}[2026/10/27 personal macros]
+\RequirePackage{amsmath}
+\RequirePackage{amsthm}
+\RequirePackage{myinner}
+\newcommand{\matr}[1]{\mathbf{#1}}
+\newcommand\vect[1]{\boldsymbol{#1}}
+\renewcommand{\vec}[1]{\vect{#1}}
+\providecommand{\norm}[2][2]{\left\lVert #2 \right\rVert_{#1}}
+\DeclareMathOperator{\wt}{wt}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\def\eps{\varepsilon}
+\def\pair#1#2{\langle #1, #2 \rangle}
+\newcommand{\@secret}{internal}
+\newcommand{\usesecret}{\@secret}
+\theoremstyle{plain}
+\newtheorem{claim}{Утверждение}[section]
+\endinput

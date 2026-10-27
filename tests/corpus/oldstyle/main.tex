@@ -1,0 +1,34 @@
+% Синтетический кейс: старая статья — cp1251, \rm/\bf/\cal в формулах, abstract без babel,
+% center, картинка, которой нет в указанном формате (pic.jpg -> pic.bmp).
+\documentclass[12pt]{article}
+%\usepackage[utf8]{inputenc}
+\usepackage[cp1251]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{amsmath,amssymb,amsthm,graphicx}
+\newtheorem{theorem}{Теорема}
+\newcommand{\Hom}{\mathop{\rm Hom}\nolimits}
+
+\begin{document}
+
+{\LARGE \begin{center} Автор Статьи
+
+\bf Заголовок по центру \end{center}}
+
+\begin{abstract}
+Аннотация в кодировке cp1251.
+\end{abstract}
+
+\section{Старые макросы}
+
+Пусть $f({\bf x}) \in \Hom(P, {\cal B})$ и ${\rm tr}\, x$.
+\begin{theorem}
+Для $\Hom(Q,P)$ верно $|{\bf a}| = 1$.
+\end{theorem}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=2cm]{pic.jpg}
+\caption{Картинка}
+\end{figure}
+
+\end{document}

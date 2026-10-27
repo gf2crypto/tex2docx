@@ -1,0 +1,19 @@
+# Шаблон с \Source, комментарием в макросе, description, \graphicspath, algorithm.
+contains:
+  - "Теорема 1.1."
+  - "— число запросов;"         # description одной строкой (lists.lua); сам термин — формула
+  - "Рис. 1. Схема"
+  - "См. теорему 1.1, рис. 1 и алгоритм 1."
+not_contains:
+  - "image"                       # картинка найдена через \graphicspath и расширение
+  - "Gen"                         # алгоритм — картинкой, не текстом
+images_min: 2                     # схема + алгоритм
+styles: [Theorem]
+report_absent:
+  - latex.compile-errors
+  - crossref.unresolved
+  - theorem.unlabeled
+  - figures.missing
+  - figures.count-mismatch
+  - pandoc.skipped
+  - internal-error

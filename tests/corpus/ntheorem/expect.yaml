@@ -1,0 +1,16 @@
+contains:
+  - "Определение 1.1."
+  - "Теорема 1.2 (Главная)."
+  - "По определению 1.1."
+  - "Лемма 1.3."
+  - "Утверждение 1.4."
+  - "Доказательство. По определению 1.1."
+not_contains:
+  - "Доказательство 1"
+styles: [Theorem]
+report_absent:
+  - crossref.unresolved
+  - theorem.unlabeled
+  - theorem.no-header
+  - latex.compile-errors
+  - internal-error

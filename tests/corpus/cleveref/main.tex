@@ -1,0 +1,43 @@
+% Синтетический кейс: hyperref + cleveref (\cref, \Cref, \autoref, \hyperref), метки с @cref в .aux.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amsthm}
+\usepackage[unicode]{hyperref}
+\usepackage[russian]{cleveref}
+
+\newtheorem{theorem}{Теорема}[section]
+\crefname{theorem}{теорема}{теоремы}
+\Crefname{theorem}{Теорема}{Теоремы}
+\crefname{equation}{формула}{формулы}
+\Crefname{equation}{Формула}{Формулы}
+
+\begin{document}
+
+\section{Ссылки}\label{sec:refs}
+
+\begin{theorem}\label{thm:c}
+Теорема для ссылок.
+\end{theorem}
+
+\begin{equation}\label{eq:c}
+  y = z .
+\end{equation}
+
+Обычные ссылки: теорема~\ref{thm:c}, формула~\eqref{eq:c}, раздел~\ref{sec:refs}.
+Умные ссылки: \cref{thm:c}, \Cref{eq:c}, \cref{sec:refs}; \autoref{thm:c};
+\hyperref[thm:c]{текст ссылки}; \url{https://example.org}.
+
+\begin{theorem}\label{thm:d}
+Вторая теорема.
+\end{theorem}
+\begin{gather}
+  a = 1, \label{eq:d}\\
+  b = 2. \label{eq:e}
+\end{gather}
+
+Несколько: \cref{thm:c,thm:d}, \cref{eq:c,eq:d,eq:e}; \cref{thm:c,eq:c}.
+Диапазон: \crefrange{eq:c}{eq:e}.
+
+\end{document}

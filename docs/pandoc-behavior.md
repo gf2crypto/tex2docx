@@ -1,7 +1,8 @@
 # Поведение pandoc, на которое мы опираемся и которое обходим
 
-Проверено на pandoc 3.1.3 (LaTeX reader → docx writer). При обновлении pandoc
+Проверено на pandoc 3.1.3 и 3.12.1 (LaTeX reader → docx writer). При обновлении pandoc
 перепроверить; сквозные тесты должны поймать большую часть изменений.
+У Ивана и Владимира pandoc 3.12 (Homebrew), в облаке Claude — 3.1.3; код обязан работать на обоих.
 Дописывай сюда каждую новую находку с датой.
 
 ## Теоремы (amsthm)
@@ -15,6 +16,14 @@
 - Необязательный аргумент (`[Основная]`) идет отдельным `Str "(Основная)."` после заголовка.
 - Тело `plain`-теорем оборачивается в `Emph`.
 
+- thmtools `\declaretheorem` и стили ntheorem pandoc не знает: окружение становится `Div` без
+  заголовка, необязательный аргумент теряется. `normalize` переписывает объявления в amsthm.
+
+## Заголовки
+
+- Номеров разделов writer docx не ставит; `\label` после `\section{}` становится `id` заголовка,
+  `\section*` получает класс `unnumbered`. Номер ставит `headings.lua` по `.aux`.
+
 ## Доказательство
 
 - `proof` → `Div(classes={"proof"})`, заголовок `Emph[Str "Proof."]` — всегда по-английски,
@@ -22,18 +31,69 @@
 
 ## Ссылки
 
+- `\ref`/`\eqref` в docx — `w:hyperlink w:anchor=<label>` на закладку с символьным стилем
+  `Hyperlink` (синий, подчеркнутый). `postprocess` снимает стиль, ссылка остается.
+
 - `\ref{x}` → `Link` с атрибутами `reference-type=ref`, `reference=x`; текст — номер pandoc
   (неверный для теорем, см. выше).
 - `\eqref{x}` → текст `[x]`: номера формул pandoc не знает вовсе.
+- `\cref{x}` → такой же `Link` с `reference-type=ref` (отличить от `\ref` нельзя), `\Cref{x}` исчезает
+  целиком, `\autoref{x}` → `reference-type=autoref` (pandoc 3.1) или `ref+label` (3.12) с текстом `[x]`. Поэтому `normalize` переписывает
+  `\cref`/`\Cref`/`\crefrange` в `\ref{cref:...}`, а тип объекта берется из `label@cref` в `.aux`.
+
+## Метки (проверено 2026-10-27)
+
+- `\label` сразу после `\begin{<теорема>}[opt]` становится `id` соответствующего `Div`;
+  `\label` после `\caption{}` — `id` элемента `Figure`. На этом держится `autolabel`.
+- `\label` внутри `equation`/`align` остается в тексте формулы (`\label{x}\na=b`) —
+  фильтр `equations` обязан его вычищать до texmath.
+- `subequations` целиком становится одной `DisplayMath` с `\begin{equation}`/`\begin{align}`
+  внутри текста формулы; texmath это переводит, но в одну формулу Word — структура и номера
+  подформул (1.9a, 1.9b) теряются. Поэтому `normalize` снимает обертку `subequations`,
+  а внутренние окружения нумеруются своими метками (кейс `numbering`).
+
+## Кодировки и старый TeX
+
+- pandoc читает вход только как UTF-8 (`Cannot decode byte`), в т.ч. местные `.sty` из cwd; `flatten` перекодирует
+  документ по опции `inputenc`, `pandoc_run` дает pandoc UTF-8-копии местных `.sty` в workdir.
+- texmath не знает `\rm`, `\bf`, `\cal`, `\it` в формулах (`unexpected control sequence \rm`) — `oldmath.lua`
+  переписывает их в `\mathrm` и т.п.
+- `abstract` уходит в метаданные и печатается первым с заголовком «Abstract»; `normalize` переименовывает
+  окружение, `lists.lua` ставит его на место со стилями Abstract Title/Abstract.
+- `center`/`flushright`/`flushleft` → `Div` с классом, writer docx выравнивание игнорирует — стили Centered/Right Aligned.
+
+## Списки
+
+- `description` → `DefinitionList` → в docx термин на отдельной строке стилем `Definition Term`,
+  а текст — стилем `Definition` (тем же именем, что у теорем-определений). Фильтр `lists` делает
+  из пункта один абзац «**термин** текст», как в LaTeX.
+
+## Рисунки и таблицы
+
+- `\includegraphics{name}` без расширения и `\graphicspath` pandoc не разрешает (`Could not fetch
+  resource`, в тексте остается слово «image»); PDF-картинки в docx не вставляет. Этап `figures`
+  находит файл как LaTeX и растрирует PDF/EPS.
+
+- `figure` с `\caption{}\label{x}` → `Figure(id=x, Caption)`; `table` → `Div(id=x)[Table(Caption)]`.
+  Writer docx печатает только текст подписи, без «Рис. 1» — префикс ставит фильтр `captions`.
+  Стили абзацев: `Image Caption` (после рисунка), `Table Caption` (перед таблицей).
 
 ## Формулы
 
 - Выносная формула лежит внутри `Para` вместе с окружающим текстом.
-- `align` → `DisplayMath` с `\begin{aligned}...\end{aligned}`; `\label` остается внутри текста формулы.
+- `align` → `DisplayMath` с `\begin{aligned}...\end{aligned}` в pandoc 3.1; **pandoc 3.12 оставляет
+  `\begin{align}`** (и `gather`, не `gathered`). `\label` остается внутри текста формулы.
+  Фильтр `equations` принимает оба имени (2026-10-27).
 - texmath **не переводит** блок `aligned`, если в нем есть `\label`/`\notag` между строками, и тогда
   формула уходит в docx **сырым TeX-текстом** с `[WARNING] Could not convert TeX math`.
   То же для любой неизвестной команды (`unexpected control sequence \foo`).
 - Номера формул (`\numberwithin{equation}{section}`) pandoc не ставит, команду пропускает.
+- `gather` и `multline` → `gathered`; `eqnarray` → `aligned` (с `&=&` как есть);
+  `alignat{2}` → `aligned`, но `{2}` остается в тексте формулы; `flalign` pandoc не знает —
+  уходит текстом. Поэтому `normalize` переписывает `alignat`/`flalign` в `align`.
+- Тело plain-теоремы pandoc оборачивает в `Emph`, и выносная формула внутри теоремы
+  лежит в `Emph`, а не прямо в `Para`. Фильтр `equations` вытаскивает ее наружу.
+- `RawInline('openxml', '<w:r><w:tab/></w:r>')` writer docx вставляет как есть — так ставим табуляторы.
 
 ## Макросы и пакеты
 
@@ -46,6 +106,22 @@
 
 - `"---` превращается в `"—` (кавычка остается). Решено в `stages/normalize.py`.
 - `~` → неразрывный пробел U+00A0 — правильно.
+
+## Проверка переводимости из Lua
+
+- `pandoc.write(Pandoc{Para{math}}, 'html', {html_math_method='mathml'})` возвращает HTML без `<math`,
+  если texmath не перевел формулу (и пишет warning в stderr). Работает в 3.1.3 и 3.12.1;
+  на этом держится `mathimg.lua`.
+
+## Библиография
+
+- `\cite` → `Cite` (без citeproc в docx выводится пусто), `\nocite{*}` pandoc понимает, `\bibliography{x}` кладет
+  `x.bib` в метаданные, `\printbibliography` пропускает. `thebibliography` → `Div` с текстом без `\bibitem`
+  (ключи потеряны). `[WARNING] Citeproc: citation <key> not found` — неизвестный ключ.
+
+- `figure*`/`table*` pandoc не знает (содержимое пропадает) — `normalize` делает из них `figure`/`table`.
+- Второй `\title` превращает метаданные title в список, и writer docx не печатает заголовок вовсе.
+- `<<`/`>>` остаются буквально (в T2A и с `Ligatures=TeX` это кавычки) — `normalize` ставит « ».
 
 ## Сообщения
 

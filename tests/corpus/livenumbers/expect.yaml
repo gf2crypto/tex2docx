@@ -1,0 +1,44 @@
+# Как basic, но с live_numbers: true (config.yaml): номера — поля SEQ, ссылки — REF (ADR 0006).
+contains:
+- Определение 1.1
+- Теорема 1.2
+- Лемма 1.3
+- Доказательство.
+- Следует из (1.1) и леммы 1.3
+- Формулы (2.1) и (2.2)
+- Гипотеза.
+- линейный код с порождающей
+- "\t(1.1)"
+- "\t(2.1)"
+- "\t(2.2)"
+- Рис. 1. Окружность
+- "и леммы 1.3.\t◻"
+- 1 Введение
+not_contains:
+- Proof.
+- '[eq:'
+- '"—'
+- Гипотеза 1
+math_min: 10
+images_min: 1
+styles:
+- Theorem
+- Definition
+- Remark
+- Proof
+- Equation
+report_absent:
+- pandoc.math-as-text
+- crossref.unresolved
+- internal-error
+- theorem.unlabeled
+fields_contain:
+- ' SEQ h1 \* ARABIC '
+- ' REF t2d_sec_intro \h '
+- ' SEQ theorem \* ARABIC \s 1 '
+- ' SEQ equation \* ARABIC \s 1 '
+- ' SEQ figure \* ARABIC '
+- ' REF t2d_eq_square \h '
+- ' REF t2d_lem_aux \h '
+- ' REF t2d_fig_circle \h '
+fields_min: 20

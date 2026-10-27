@@ -8,6 +8,12 @@ engine: pdflatex            # pdflatex | xelatex | lualatex
 
 proof_name: Доказательство
 
+# Подписи: "Рис. 1. ..." и "Таблица 1. ...". Без этих ключей — по языку babel
+# (russian: Рис./Таблица и точка; иначе Figure/Table и двоеточие).
+# figure_name: Рис.
+# table_name: Таблица
+# caption_sep: "."
+
 # amsthm \theoremstyle -> имя стиля абзаца в reference.docx
 theorem_styles:
   plain: Theorem
@@ -21,5 +27,16 @@ macros:
   '\code': '\mathcal'
 
 # Окружения, которые рендерятся картинками через пакет preview.
-figure_envs: [tikzpicture]
+figure_envs: [tikzpicture, algorithm, algorithmic, pchstack, pcvstack, procedure, pseudocode]
 figure_dpi: 300
+
+# Живые номера: формулы/теоремы/рисунки — поля SEQ, ссылки — поля REF (Word пересчитает
+# после правок; обновить поля: Ctrl+A, F9). По умолчанию номера — текст, как в PDF.
+live_numbers: false
+
+# Стиль библиографии (CSL) для .bib; без ключа — вшитый ГОСТ Р 7.0.5-2008 (numeric).
+# csl: my-journal.csl
+
+# Формула, которую pandoc не смог перевести в формулу Word:
+# image — картинка, набранная LaTeX с преамбулой документа; text — сырой TeX, как у pandoc.
+math_fallback: image

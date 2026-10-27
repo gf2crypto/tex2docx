@@ -8,12 +8,14 @@ pytest reports XPASS - move it to the strict list.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
 import pytest
 import yaml
 
+from tex2docx.config import Config
 from tex2docx.pipeline import convert
 
 from .docxprobe import DocxProbe
@@ -27,11 +29,29 @@ needs_tools = pytest.mark.skipif(
 )
 
 
+def convert_case(case: str, out: Path) -> None:
+    """Convert a corpus case. A texmf/ folder in the case plays the user's personal
+    texmf tree: it is prepended to TEXMFHOME for the duration of the conversion."""
+    texmf = CORPUS / case / "texmf"
+    saved = os.environ.get("TEXMFHOME")
+    if texmf.is_dir():
+        os.environ["TEXMFHOME"] = "{" + str(texmf) + ("," + saved if saved else "") + "}"
+    cfg = CORPUS / case / "config.yaml"
+    try:
+        convert(CORPUS / case / "main.tex", out, Config.load(cfg) if cfg.is_file() else None)
+    finally:
+        if texmf.is_dir():
+            if saved is None:
+                del os.environ["TEXMFHOME"]
+            else:
+                os.environ["TEXMFHOME"] = saved
+
+
 @pytest.fixture(scope="module", params=CASES)
 def converted(request, tmp_path_factory):
     case = request.param
     out = tmp_path_factory.mktemp(case) / f"{case}.docx"
-    convert(CORPUS / case / "main.tex", out)
+    convert_case(case, out)
     expect = yaml.safe_load((CORPUS / case / "expect.yaml").read_text(encoding="utf-8")) or {}
     report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
     probe = DocxProbe.open(out) if out.exists() else None
@@ -51,9 +71,15 @@ def test_strict(converted):
     assert probe.images >= expect.get("images_min", 0)
     missing_styles = set(expect.get("styles", [])) - probe.styles
     assert not missing_styles, f"{case}: styles not used: {missing_styles}"
+    assert len(probe.fields) >= expect.get("fields_min", 0), probe.fields
+    for f in expect.get("fields_contain", []):
+        assert f in probe.fields, f"{case}: no field {f!r} in {probe.fields}"
     codes = {i["code"] for i in report}
     bad = codes & set(expect.get("report_absent", []))
     assert not bad, f"{case}: report has {bad}"
+    for code, where in expect.get("report_where", {}).items():
+        places = {i.get("where") for i in report if i["code"] == code}
+        assert where in places, f"{case}: {code} reported at {places}, expected {where!r}"
 
 
 def _xfail_items():
@@ -71,7 +97,7 @@ def _xfail_items():
 @pytest.mark.parametrize("case,kind,item", list(_xfail_items()))
 def test_planned(case, kind, item, tmp_path):
     out = tmp_path / f"{case}.docx"
-    convert(CORPUS / case / "main.tex", out)
+    convert_case(case, out)
     if kind == "contains":
         assert item in DocxProbe.open(out).text
     else:

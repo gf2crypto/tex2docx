@@ -1,0 +1,15 @@
+# Непереводимые формулы -> картинки через preview (stages/mathimg.py, filters/mathimg.lua).
+contains:
+  - "\t(1)"                   # номер у формулы-картинки остается
+  - "См. (1)."
+not_contains:
+  - "\\sideset"               # сырого TeX в тексте нет
+  - "\\prescript"
+  - "\\smash"
+math_min: 1
+images_min: 3                 # две разные inline + одна выносная (повтор — та же картинка, но вставлена снова)
+report_absent:
+  - pandoc.math-as-text
+  - mathimg.count-mismatch
+  - mathimg.compile-failed
+  - internal-error

@@ -14,12 +14,13 @@ package.path = pandoc.path.directory(PANDOC_SCRIPT_FILE) .. '/?.lua;' .. package
 local t2d = require 't2d'
 
 -- Replace or drop the trailing number inside the header Strong/Emph.
-local function fix_number(header, number)
+local function fix_number(header, number, counter, label, within)
   local c = header.content
   local last = c[#c]
   if not (last and last.t == 'Str' and last.text:match('^[%d%.]+$')) then return end
   if number then
-    last.text = number
+    c:remove(#c)
+    c:extend(t2d.number(number, counter, label, within))
   else
     c:remove(#c)
     if c[#c] and c[#c].t == 'Space' then c:remove(#c) end
@@ -58,7 +59,11 @@ function Pandoc(doc)
         if not d.numbered then
           fix_number(h, nil)
         elseif div.identifier ~= '' and labels[div.identifier] then
-          fix_number(h, labels[div.identifier])
+          -- JSON null arrives as userdata: only strings count
+          local counter = type(d.counter) == 'string' and d.counter or env
+          local owner = decls[counter] or d  -- a shared counter is numbered like its owner
+          local within = type(owner.within) == 'string' and owner.within or nil
+          fix_number(h, labels[div.identifier], counter, div.identifier, within)
         else
           t2d.report('warning', 'theorem.unlabeled', env)
         end

@@ -1,0 +1,11 @@
+contains:
+  - "См. [1] и [1, 2], а также [2, гл. 2]."
+  - "Список литературы"
+  - "Кнут Д. Искусство программирования. М.: Вильямс, 2000."
+  - "Lamport L. Time, clocks, and the ordering of events // Comm. ACM. 1978."
+not_contains:
+  - "thebibliography"
+report_absent:
+  - bibliography.unknown-key
+  - latex.compile-errors
+  - internal-error

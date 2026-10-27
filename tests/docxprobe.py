@@ -16,6 +16,7 @@ class DocxProbe:
     math: int
     images: int
     styles: set[str]
+    fields: list[str]  # w:instr of every simple field, in document order
 
     @classmethod
     def open(cls, path: Path) -> DocxProbe:
@@ -31,6 +32,8 @@ class DocxProbe:
                 if any(a.tag.startswith("{http://schemas.openxmlformats.org/officeDocument/2006/math}")
                        for a in el.iterancestors()):
                     continue
+                if el.tag == f"{W}tab" and el.getparent().tag != f"{W}r":
+                    continue  # a tab stop definition in w:pPr/w:tabs, not a character
                 parts.append("\t" if el.tag == f"{W}tab" else (el.text or ""))
             paras.append("".join(parts))
         s = xml.decode("utf-8")
@@ -40,4 +43,5 @@ class DocxProbe:
             math=len(re.findall(r"<m:oMath>", s)),
             images=len(re.findall(r"<pic:pic\b", s)),
             styles=set(re.findall(r'<w:pStyle w:val="([^"]+)"', s)),
+            fields=re.findall(r'<w:fldSimple w:instr="([^"]*)"', s),
         )

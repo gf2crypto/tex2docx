@@ -1,0 +1,23 @@
+contains:
+  - "Статья с BibTeX"
+  - "В АО «НПК «Криптонит» читают [1] и [1, 2]."
+  - "Рис. 1. Широкий рисунок"
+  - "См. рис. 1."
+  - "Библиография"
+  - "Дональд Кнут. Искусство программирования."      # unsrt.bst, как в PDF
+  - "References"
+  - "Leslie Lamport."
+  - "Article with BibTeX"              # второй титульный блок по центру
+not_contains:
+  - "selectlanguageifdefined"
+  - "\\bibitem"
+  - "cite{rus}"
+images_min: 0
+styles: [Centered]
+report_absent:
+  - bibliography.no-bbl
+  - bibliography.unknown-key
+  - bibliography.missing-bib
+  - crossref.unresolved
+  - latex.compile-errors
+  - internal-error

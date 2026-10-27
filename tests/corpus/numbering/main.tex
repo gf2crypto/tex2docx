@@ -1,0 +1,84 @@
+% Синтетический кейс: нумерация как в LaTeX (общие счетчики, \numberwithin, \tag,
+% subequations, безномерные окружения). Реальных статей в корпусе нет.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{proposition}[theorem]{Предложение}
+\theoremstyle{definition}
+\newtheorem{definition}{Определение}
+\newtheorem*{notation}{Обозначение}
+
+\numberwithin{equation}{section}
+
+\begin{document}
+
+\section{Первый раздел}
+
+\begin{definition}
+Первое определение со своим счетчиком.
+\end{definition}
+
+\begin{theorem}
+Утверждение без метки.
+\end{theorem}
+
+\begin{equation}
+  x = y
+\end{equation}
+
+\section{Второй раздел}
+
+\begin{definition}\label{def:two}
+Второе определение.
+\end{definition}
+
+\begin{theorem}\label{thm:two}
+Теорема с меткой.
+\end{theorem}
+
+\begin{proposition}
+Предложение делит счетчик с теоремой.
+\end{proposition}
+
+\begin{notation}
+Обозначение без номера.
+\end{notation}
+
+\begin{align}
+  a &= b, \\
+  c &= d.
+\end{align}
+
+\begin{equation}\label{eq:tagged}
+  e = f \tag{A}
+\end{equation}
+
+\begin{equation}
+  g = h \tag*{B}
+\end{equation}
+
+\begin{equation*}
+  i = j
+\end{equation*}
+
+\begin{subequations}\label{eq:sub}
+\begin{align}
+  k &= l, \label{eq:sub-a}\\
+  m &= n. \label{eq:sub-b}
+\end{align}
+\end{subequations}
+
+\begin{multline}\label{eq:multi}
+  o + p + q \\
+  + r + s = t.
+\end{multline}
+
+Ссылки: определение~\ref{def:two}, теорема~\ref{thm:two}, формулы~\eqref{eq:tagged},
+\eqref{eq:sub}, \eqref{eq:sub-a}, \eqref{eq:sub-b} и~\eqref{eq:multi}.
+
+\end{document}

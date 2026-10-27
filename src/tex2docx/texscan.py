@@ -52,15 +52,35 @@ _COMMENT_LINE = re.compile(r"^[ \t]*%")
 
 
 def blank_comment_lines(text: str) -> str:
-    """Empty every full-line comment, keeping line numbering intact.
+    """Reduce every full-line comment to a lone '%', keeping line numbering intact.
 
+    Not an empty line: inside a macro argument an empty line is a \\par and breaks
+    LaTeX ("Paragraph ended before ... was complete"); a lone '%' is invisible.
     Trailing comments are left alone: '%' inside verbatim/url makes that unsafe.
     """
-    return "\n".join("" if _COMMENT_LINE.match(ln) else ln for ln in text.split("\n"))
+    return "\n".join("%" if _COMMENT_LINE.match(ln) else ln for ln in text.split("\n"))
 
 
 def line_of(text: str, pos: int) -> int:
     return text.count("\n", 0, pos) + 1
+
+
+_BABEL = re.compile(r"(?<!\\)\\usepackage\s*(?:\[([^\]]*)\])?\s*\{babel\}")
+
+
+def babel_languages(text: str) -> list[str]:
+    """Languages from \\usepackage[...]{babel}, in order; the last one is the main one."""
+    langs: list[str] = []
+    for m in _BABEL.finditer(text):
+        for opt in (m.group(1) or "").split(","):
+            opt = opt.strip()
+            if "=" in opt:  # main=russian, bidi=... etc.
+                key, _, val = opt.partition("=")
+                if key.strip() == "main":
+                    langs.append(val.strip())
+            elif opt:
+                langs.append(opt)
+    return langs
 
 
 _CMD = re.compile(r"\\[A-Za-z@]+\*?\s*")

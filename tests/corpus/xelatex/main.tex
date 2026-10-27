@@ -1,0 +1,26 @@
+% Синтетический кейс: xelatex + fontspec + polyglossia (без fontenc/inputenc).
+\documentclass[12pt]{article}
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\usepackage{polyglossia}
+\setmainlanguage{russian}
+\usepackage{amsmath,amsthm,unicode-math}
+\setmathfont{DejaVu Math TeX Gyre}
+
+\newtheorem{theorem}{Теорема}
+
+\begin{document}
+
+\section{Юникод}
+
+\begin{theorem}\label{thm:x}
+Теорема в документе для XeLaTeX.
+\end{theorem}
+
+Формула с юникодом в тексте — α и β:
+\begin{equation}\label{eq:x}
+  \alpha + \beta = \gamma .
+\end{equation}
+См.~\ref{thm:x} и~\eqref{eq:x}.
+
+\end{document}

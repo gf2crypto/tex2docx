@@ -1,0 +1,19 @@
+% Синтетический кейс: biblatex (biblatex-gost) + .bib -> citeproc с CSL ГОСТ (ADR 0005).
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage[backend=biber,bibstyle=gost-numeric,citestyle=numeric-comp,sorting=none]{biblatex}
+\addbibresource{refs.bib}
+
+\begin{document}
+
+\section{Цитаты}
+
+Первая ссылка~\cite{knuth2000}, затем две сразу~\cite{knuth2000,lamport1978}
+и ссылка со страницей~\cite[с.~5]{knuth2000}.
+\nocite{*}
+
+\printbibliography
+
+\end{document}
