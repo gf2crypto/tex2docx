@@ -17,12 +17,27 @@ from importlib import resources
 from pathlib import Path
 
 from ..context import Context
+from ..texscan import babel_languages
 from ..tools import ToolError, require
 from ..tools import run as run_tool
 from . import StageError
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "equations.lua"]  # order matters
+FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "equations.lua"]  # order matters
+
+CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
+    "russian": ("Рис.", "Таблица", "."),
+    "ukrainian": ("Рис.", "Таблиця", "."),
+    "english": ("Figure", "Table", ":"),
+}
+
+
+def caption_names(ctx: Context) -> dict[str, str]:
+    langs = babel_languages(ctx.tex)
+    fig, tab, sep = CAPTION_NAMES.get(langs[-1] if langs else "english", CAPTION_NAMES["english"])
+    c = ctx.config
+    return {"figure": c.figure_name or fig, "table": c.table_name or tab,
+            "sep": c.caption_sep if c.caption_sep is not None else sep}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
 _MATH_FAIL = re.compile(r"^\[WARNING\] Could not convert TeX math")
@@ -77,6 +92,7 @@ def run(ctx: Context) -> None:
         "theorems": {k: asdict(v) for k, v in ctx.theorems.items()},
         "proof_name": ctx.config.proof_name,
         "styles": ctx.config.theorem_styles,
+        "names": caption_names(ctx),
     }, ensure_ascii=False), encoding="utf-8")
 
     ref = ctx.config.reference_docx or _pkg_path("data", "reference.docx")

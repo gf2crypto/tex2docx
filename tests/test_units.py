@@ -14,7 +14,7 @@ from tex2docx.stages.flatten import flatten_text
 from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
 from tex2docx.stages.theorems import scan_decls
-from tex2docx.texscan import blank_comment_lines, read_group, strip_tex
+from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
 # --- texscan -----------------------------------------------------------------
 
@@ -33,6 +33,12 @@ def test_strip_tex():
 def test_blank_comment_lines_keeps_numbering():
     s = "a\n  % c\nb % trailing stays\n"
     assert blank_comment_lines(s) == "a\n\nb % trailing stays\n"
+
+
+def test_babel_languages():
+    assert babel_languages(r"\usepackage[english,russian]{babel}") == ["english", "russian"]
+    assert babel_languages(r"\usepackage[main=russian, english]{babel}") == ["russian", "english"]
+    assert babel_languages(r"\usepackage{babel}") == []
 
 
 # --- aux ---------------------------------------------------------------------

@@ -36,12 +36,13 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 
 ```json
 {"labels": {"thm:main": "1.2"}, "theorems": {"theorem": {"style": "plain", "numbered": true, ...}},
- "proof_name": "Доказательство", "styles": {"plain": "Theorem", ...}}
+ "proof_name": "Доказательство", "styles": {"plain": "Theorem", ...},
+ "names": {"figure": "Рис.", "table": "Таблица", "sep": "."}}
 ```
 
 путь передается метаданными `-M t2d-meta=<path>`, фильтр читает его через `t2d.load(doc.meta)`.
 
-Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `equations`.
+Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `equations`.
 `equations` последним, потому что он разрезает абзацы, а `theorems` ищет заголовок в первом абзаце `Div`.
 
 ## Отчет

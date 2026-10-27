@@ -63,6 +63,24 @@ def line_of(text: str, pos: int) -> int:
     return text.count("\n", 0, pos) + 1
 
 
+_BABEL = re.compile(r"(?<!\\)\\usepackage\s*(?:\[([^\]]*)\])?\s*\{babel\}")
+
+
+def babel_languages(text: str) -> list[str]:
+    """Languages from \\usepackage[...]{babel}, in order; the last one is the main one."""
+    langs: list[str] = []
+    for m in _BABEL.finditer(text):
+        for opt in (m.group(1) or "").split(","):
+            opt = opt.strip()
+            if "=" in opt:  # main=russian, bidi=... etc.
+                key, _, val = opt.partition("=")
+                if key.strip() == "main":
+                    langs.append(val.strip())
+            elif opt:
+                langs.append(opt)
+    return langs
+
+
 _CMD = re.compile(r"\\[A-Za-z@]+\*?\s*")
 
 

@@ -26,6 +26,11 @@ class Config:
             "remark": "Remark",
         }
     )
+    # Caption prefixes: "Рис. 1. ..." / "Таблица 1. ...". None = by babel language
+    # (russian: Рис./Таблица and "."; otherwise Figure/Table and ":").
+    figure_name: str | None = None
+    table_name: str | None = None
+    caption_sep: str | None = None
     # Manual macro overrides: {"\\matr": "\\mathbf"}. Applied before pandoc.
     macros: dict[str, str] = field(default_factory=dict)
     # Environments rendered as pictures via the preview package.

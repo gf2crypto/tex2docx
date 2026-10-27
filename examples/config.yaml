@@ -8,6 +8,12 @@ engine: pdflatex            # pdflatex | xelatex | lualatex
 
 proof_name: Доказательство
 
+# Подписи: "Рис. 1. ..." и "Таблица 1. ...". Без этих ключей — по языку babel
+# (russian: Рис./Таблица и точка; иначе Figure/Table и двоеточие).
+# figure_name: Рис.
+# table_name: Таблица
+# caption_sep: "."
+
 # amsthm \theoremstyle -> имя стиля абзаца в reference.docx
 theorem_styles:
   plain: Theorem
