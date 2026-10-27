@@ -1,0 +1,25 @@
+# Пример конфигурации: tex2docx main.tex -c examples/config.yaml
+# Все ключи необязательны; неизвестный ключ — ошибка.
+
+engine: pdflatex            # pdflatex | xelatex | lualatex
+
+# Шаблон стилей Word (путь относительно этого файла). Без него — встроенный.
+# reference_docx: journal-reference.docx
+
+proof_name: Доказательство
+
+# amsthm \theoremstyle -> имя стиля абзаца в reference.docx
+theorem_styles:
+  plain: Theorem
+  definition: Definition
+  remark: Remark
+
+# Ручная подмена макросов, которые pandoc не видит (например, из личного texmf).
+macros:
+  '\matr': '\mathbf'
+  '\vect': '\mathbf'
+  '\code': '\mathcal'
+
+# Окружения, которые рендерятся картинками через пакет preview.
+figure_envs: [tikzpicture]
+figure_dpi: 300

@@ -1,0 +1,33 @@
+# Ожидания для сквозного теста (tests/test_corpus.py).
+# contains:        строки, которые должны быть в тексте docx (без формул)
+# xfail_contains:  то же, но пока не реализовано; при реализации перенести в contains
+# not_contains:    строки, которых быть не должно
+# math_min:        минимум нативных формул Word (m:oMath)
+# images_min:      минимум картинок
+# styles:          стили абзацев, которые должны встретиться
+# report_absent:   коды отчета, которых быть не должно
+contains:
+  - "Определение 1.1"
+  - "Теорема 1.2"
+  - "Лемма 1.3"
+  - "Доказательство."
+  - "Следует из (1.1) и леммы 1.3"
+  - "Формулы (2.1) и (2.2)"
+  - "Гипотеза."
+  - "линейный код с порождающей"
+not_contains:
+  - "Proof."
+  - "[eq:"
+  - '"—'
+  - "Гипотеза 1"
+xfail_contains:
+  - "\t(2.1)"        # M1: номер у выносной формулы (сейчас он есть только в ссылках)
+math_min: 10
+images_min: 1
+styles: [Theorem, Definition, Remark, Proof]
+report_absent:
+  - pandoc.math-as-text
+  - crossref.unresolved
+  - internal-error
+xfail_report_absent:
+  - theorem.unlabeled   # M1: stages/autolabel.py

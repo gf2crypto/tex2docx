@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tex2docx"
+version = "0.0.1"
+description = "LaTeX -> Word (.docx) with native equations and real theorem styling, numbering taken from LaTeX itself"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-docx>=1.1",
+    "lxml>=5",
+    "PyYAML>=6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+tex2docx = "tex2docx.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tex2docx = ["filters/*.lua", "data/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "e2e: end-to-end conversion of the corpus (needs pandoc and latexmk)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
