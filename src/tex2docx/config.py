@@ -36,12 +36,17 @@ class Config:
     # Environments rendered as pictures via the preview package.
     figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture"])
     figure_dpi: int = 300
+    # Formula texmath cannot convert: "image" (rendered by LaTeX, see stages/mathimg.py)
+    # or "text" (left as raw TeX, as pandoc does).
+    math_fallback: str = "image"
     # Seconds per LaTeX run.
     latex_timeout: int = 600
 
     def __post_init__(self) -> None:
         if self.engine not in ENGINES:
             raise ValueError(f"engine must be one of {ENGINES}, got {self.engine!r}")
+        if self.math_fallback not in ("image", "text"):
+            raise ValueError(f"math_fallback must be 'image' or 'text', got {self.math_fallback!r}")
 
     @classmethod
     def load(cls, path: Path | None) -> Config:

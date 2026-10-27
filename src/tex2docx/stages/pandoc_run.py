@@ -20,10 +20,10 @@ from ..context import Context
 from ..texscan import babel_languages
 from ..tools import ToolError, require
 from ..tools import run as run_tool
-from . import StageError
+from . import StageError, mathimg
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "equations.lua"]  # order matters
+FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "equations.lua", "mathimg.lua"]  # order matters
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
@@ -82,21 +82,9 @@ def collect_pandoc_messages(stderr: str, input_name: str, ctx: Context) -> None:
             ctx.report.add(m.group(1), "filter", m.group(2), m.group(3))
 
 
-def run(ctx: Context) -> None:
+def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path):
     pandoc = require("pandoc")
-    inp = ctx.workdir / "pandoc_input.tex"
-    inp.write_text(ctx.tex, encoding="utf-8")
-    meta = ctx.workdir / "t2d-meta.json"
-    meta.write_text(json.dumps({
-        "labels": {k: v.number for k, v in ctx.labels.items()},
-        "theorems": {k: asdict(v) for k, v in ctx.theorems.items()},
-        "proof_name": ctx.config.proof_name,
-        "styles": ctx.config.theorem_styles,
-        "names": caption_names(ctx),
-    }, ensure_ascii=False), encoding="utf-8")
-
     ref = ctx.config.reference_docx or _pkg_path("data", "reference.docx")
-    out = ctx.workdir / "pandoc.docx"
     # cwd = source dir: pandoc reads \usepackage'd .sty files relative to cwd
     # (not --resource-path), and that is how it sees local macro packages.
     cmd = [
@@ -109,9 +97,37 @@ def run(ctx: Context) -> None:
     for f in FILTERS:
         cmd += ["--lua-filter", str(_pkg_path("filters", f))]
     try:
-        proc = run_tool(cmd, cwd=ctx.source_dir)
+        return run_tool(cmd, cwd=ctx.source_dir)
     except ToolError as e:
         raise StageError("pandoc.tool", str(e)) from e
+
+
+def run(ctx: Context) -> None:
+    inp = ctx.workdir / "pandoc_input.tex"
+    inp.write_text(ctx.tex, encoding="utf-8")
+    meta = ctx.workdir / "t2d-meta.json"
+    failed_path = ctx.workdir / "mathfail.json"
+    data = {
+        "labels": {k: v.number for k, v in ctx.labels.items()},
+        "theorems": {k: asdict(v) for k, v in ctx.theorems.items()},
+        "proof_name": ctx.config.proof_name,
+        "styles": ctx.config.theorem_styles,
+        "names": caption_names(ctx),
+        "mathimg": {"mode": "collect", "out": str(failed_path)},
+    }
+    if ctx.config.math_fallback != "image":
+        data["mathimg"] = None
+    meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    out = ctx.workdir / "pandoc.docx"
+    proc = _pandoc(ctx, inp, meta, out)
+
+    # Second pass only when some formula could not be converted and LaTeX rendered it.
+    images = mathimg.render(ctx, mathimg.load_failed(failed_path)) if data["mathimg"] else {}
+    if images:
+        data["mathimg"] = {"mode": "replace", "images": images}
+        meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        proc = _pandoc(ctx, inp, meta, out)
+        ctx.report.warn(STAGE, "pandoc.math-as-image", str(len(images)))
 
     collect_pandoc_messages(proc.stderr, inp.name, ctx)
     if proc.returncode != 0 or not out.exists():

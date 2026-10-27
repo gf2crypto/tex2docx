@@ -29,3 +29,7 @@ macros:
 # Окружения, которые рендерятся картинками через пакет preview.
 figure_envs: [tikzpicture]
 figure_dpi: 300
+
+# Формула, которую pandoc не смог перевести в формулу Word:
+# image — картинка, набранная LaTeX с преамбулой документа; text — сырой TeX, как у pandoc.
+math_fallback: image

@@ -33,7 +33,7 @@
 
 - [x] `macros`: определения (и `\newtheorem`) из пакетов и классов, найденных через `kpsewhich`
       вне дистрибутива (личный texmf); кейс `texmfhome`.
-- [ ] Формула, которую pandoc не смог перевести → картинка через `preview` (настраивается).
+- [x] Формула, которую pandoc не смог перевести → картинка через `preview` (`math_fallback`); кейс `mathimage`.
 - [ ] Отображение строк отчета на исходные файлы (сейчас номера строк — по склеенному тексту).
 - [ ] thmtools (`\declaretheorem`), ntheorem.
 - [ ] Кейсы корпуса: `amsart`, `article`+hyperref+cleveref, xelatex+fontspec, документ из нескольких файлов.

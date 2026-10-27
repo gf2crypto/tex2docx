@@ -20,7 +20,8 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 | normalize | `stages/normalize.py` | бабелевские сокращения в `ctx.tex` | готов |
 | macros | `stages/macros.py` | определения из личных пакетов (`texmf.py`, kpsewhich) + конфиг | готов |
 | figures | `stages/figures.py` | `preview` → PNG → `\includegraphics` | готов |
-| pandoc | `stages/pandoc_run.py` | pandoc + фильтры, сбор сообщений | готов |
+| pandoc | `stages/pandoc_run.py` | pandoc + фильтры, сбор сообщений; второй проход с картинками формул | готов |
+| (mathimg) | `stages/mathimg.py` | непереводимые формулы → PNG через `preview` (вызывается из pandoc) | готов |
 | postprocess | `stages/postprocess.py` | типографика, keep-with-next, знак конца доказательства, вид ссылок | частично (M3) |
 
 ## Два представления исходника
@@ -42,8 +43,15 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 
 путь передается метаданными `-M t2d-meta=<path>`, фильтр читает его через `t2d.load(doc.meta)`.
 
-Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `equations`.
+Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `equations` → `mathimg`.
 `equations` последним, потому что он разрезает абзацы, а `theorems` ищет заголовок в первом абзаце `Div`.
+
+## Формулы-картинки
+
+Первый проход pandoc: `mathimg.lua` проверяет каждую формулу (`pandoc.write` в MathML; нет `<math>` —
+texmath не справился) и пишет список в `mathfail.json`. `stages/mathimg.py` набирает их настоящим LaTeX
+с преамбулой документа через `preview` → PNG. Второй проход: `mathimg.lua` подменяет эти формулы
+картинками. Без непереводимых формул второго прохода нет.
 
 ## Отчет
 
