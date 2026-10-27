@@ -4,6 +4,9 @@ Status: implemented (M0): babel shorthands of Russian/Ukrainian.
 pandoc renders '"---' as a literal quote plus dash; LaTeX never shows the quote.
 M1: alignat/flalign become align (pandoc leaves alignat's column count in the
 formula text and does not know flalign at all); numbering is the same.
+The subequations wrapper is removed (pandoc folds it into one formula): the
+inner environments keep their labels and LaTeX has already numbered them 2.3a,
+2.3b; references to the wrapper's own label resolve through the .aux anyway.
 """
 
 from __future__ import annotations
@@ -33,6 +36,8 @@ BABEL_SHORTHANDS: list[tuple[str, str]] = [
 MATH_ENVS: list[tuple[str, str]] = [
     (r"(?<!\\)\\(begin|end)\{alignat(\*?)\}(?:\{\d+\})?", r"\\\1{align\2}"),
     (r"(?<!\\)\\(begin|end)\{flalign(\*?)\}", r"\\\1{align\2}"),
+    (r"(?<!\\)\\begin\{subequations\}(?:\s*\\label\s*\{[^{}]*\})?", ""),
+    (r"(?<!\\)\\end\{subequations\}", ""),
 ]
 
 

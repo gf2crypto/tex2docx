@@ -18,7 +18,7 @@
 - [x] `reference.docx` со стилями Theorem/Definition/Remark/Proof.
 - [x] Корпус `basic` + сквозной тест по `expect.yaml`, юнит-тесты.
 
-## M1 — нумерация как в LaTeX
+## M1 — нумерация как в LaTeX (готово)
 
 - [x] `autolabel`: метки `t2d:auto:N` для всех нумеруемых объектов без `\label`
       (теоремы, equation/multline/subequations, строки align/gather/eqnarray, рисунки, таблицы)
@@ -27,7 +27,7 @@
       (ADR 0004: абзац стиля `Equation` с табуляторами).
 - [x] Разрезать `Para` вокруг выносной формулы, чтобы формула была отдельным абзацем.
 - [x] Подписи рисунков и таблиц с номером: «Рис. 1. Окружность» (имя из babel/конфига).
-- [ ] Кейс корпуса `numbering`: `\numberwithin`, общие счетчики, `\newtheorem*`, `\tag`, `subequations`.
+- [x] Кейс корпуса `numbering`: `\numberwithin`, общие счетчики, `\newtheorem*`, `\tag`, `subequations`.
 
 ## M2 — устойчивость на чужих документах
 

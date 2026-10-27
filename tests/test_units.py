@@ -100,6 +100,9 @@ def test_normalize_math_envs():
     assert normalize_text(r"\begin{alignat}{2} a \end{alignat}") == r"\begin{align} a \end{align}"
     assert normalize_text(r"\begin{alignat*}{3}") == r"\begin{align*}"
     assert normalize_text(r"\begin{flalign} \end{flalign}") == r"\begin{align} \end{align}"
+    assert normalize_text("\\begin{subequations}\\label{s}\n\\begin{equation}\\label{a} x "
+                          "\\end{equation}\n\\end{subequations}") \
+        == "\n\\begin{equation}\\label{a} x \\end{equation}\n"
 
 
 # --- pandoc message collection ----------------------------------------------
