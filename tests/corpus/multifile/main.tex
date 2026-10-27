@@ -1,0 +1,20 @@
+% Синтетический кейс: документ из нескольких файлов (\input и \include),
+% строки отчета должны указывать на вложенный файл. Реальных статей в корпусе нет.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amsthm}
+\newtheorem{theorem}{Теорема}[section]
+\numberwithin{equation}{section}
+\input{preamble-macros}
+
+\begin{document}
+
+\input{sections/intro}
+\include{sections/calc}
+
+Итог: теорема~\ref{thm:calc} и формула~\eqref{eq:calc} из включенного файла,
+формула~\eqref{eq:intro} из первого.
+
+\end{document}

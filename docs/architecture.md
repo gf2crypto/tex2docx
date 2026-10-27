@@ -55,7 +55,10 @@ texmath не справился) и пишет список в `mathfail.json`. 
 
 ## Отчет
 
-- Python: `ctx.report.warn(stage, code, detail, line=...)`.
+- Python: `ctx.report.warn(stage, code, detail, line=...)`; `line` — строка склеенного текста,
+  в отчете она показывается как строка исходного файла (`sections/calc.tex:7`) по `ctx.line_map`
+  из `flatten`. Поэтому этапы не меняют число строк (`figures` дополняет переносами, `macros`
+  вставляет определения в ту же строку).
 - Lua: `t2d.report('warning', 'code', 'detail')` → stderr → `pandoc_run.collect_pandoc_messages`.
 - Также в отчет идут: команды, которые pandoc пропустил (кроме безвредных из `HARMLESS_SKIPS`),
   и формулы, которые texmath не перевел (только имя непонятой команды).

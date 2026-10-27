@@ -34,9 +34,10 @@
 - [x] `macros`: определения (и `\newtheorem`) из пакетов и классов, найденных через `kpsewhich`
       вне дистрибутива (личный texmf); кейс `texmfhome`.
 - [x] Формула, которую pandoc не смог перевести → картинка через `preview` (`math_fallback`); кейс `mathimage`.
-- [ ] Отображение строк отчета на исходные файлы (сейчас номера строк — по склеенному тексту).
+- [x] Отображение строк отчета на исходные файлы (`ctx.line_map`; этапы сохраняют число строк).
 - [ ] thmtools (`\declaretheorem`), ntheorem.
-- [ ] Кейсы корпуса: `amsart`, `article`+hyperref+cleveref, xelatex+fontspec, документ из нескольких файлов.
+- [x] Кейс корпуса: документ из нескольких файлов (`multifile`).
+- [ ] Кейсы корпуса: `amsart`, `article`+hyperref+cleveref, xelatex+fontspec.
 
 ## M3 — полировка Word
 

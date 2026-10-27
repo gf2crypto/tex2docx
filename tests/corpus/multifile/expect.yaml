@@ -1,0 +1,17 @@
+# Документ из нескольких файлов: \input, \include (свой .aux), отчет со ссылками на файлы.
+contains:
+  - "Введение"
+  - "\t(1.1)"
+  - "Теорема 2.1."
+  - "\t(2.1)"
+  - "теорема 2.1 и формула (2.1) из включенного файла, формула (1.1) из первого."
+not_contains:
+  - "[eq:"
+math_min: 3
+styles: [Theorem, Equation]
+report_absent:
+  - crossref.unresolved
+  - flatten.missing-input
+  - internal-error
+report_where:                      # код -> где (файл относительно main.tex и строка в нем)
+  pandoc.skipped: "sections/calc.tex:7"

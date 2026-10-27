@@ -72,6 +72,9 @@ def test_strict(converted):
     codes = {i["code"] for i in report}
     bad = codes & set(expect.get("report_absent", []))
     assert not bad, f"{case}: report has {bad}"
+    for code, where in expect.get("report_where", {}).items():
+        places = {i.get("where") for i in report if i["code"] == code}
+        assert where in places, f"{case}: {code} reported at {places}, expected {where!r}"
 
 
 def _xfail_items():

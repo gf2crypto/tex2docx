@@ -27,6 +27,16 @@ class Item:
 class Report:
     def __init__(self) -> None:
         self.items: list[Item] = []
+        # Set by the flatten stage: origin of each line of the flattened source.
+        self.line_map: list[tuple[str, int]] = []
+        self.main_file: str = ""
+
+    def locate(self, line: int) -> str:
+        """'12' for a line of the main file, 'sections/a.tex:12' for an included one."""
+        if 1 <= line <= len(self.line_map):
+            file, n = self.line_map[line - 1]
+            return str(n) if file == self.main_file else f"{file}:{n}"
+        return str(line)
 
     def add(self, level: str, stage: str, code: str, detail: str = "",
             line: int | None = None) -> None:
@@ -53,10 +63,13 @@ class Report:
         """Write <base>.report.json and <base>.report.md, return both paths."""
         jpath = base.with_suffix(".report.json")
         mpath = base.with_suffix(".report.md")
-        jpath.write_text(
-            json.dumps([asdict(i) for i in self.items], ensure_ascii=False, indent=1),
-            encoding="utf-8",
-        )
+        rows = []
+        for i in self.items:
+            d = asdict(i)
+            if i.line is not None:
+                d["where"] = self.locate(i.line)
+            rows.append(d)
+        jpath.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
         mpath.write_text(self.to_markdown(), encoding="utf-8")
         return jpath, mpath
 
@@ -84,7 +97,7 @@ class Report:
                     "| этап | код | объект | раз | строки |", "|---|---|---|---|---|"]
             for k in sorted(rows):
                 ls = lines_of.get(k, [])
-                shown = ", ".join(map(str, ls[:8])) + (" …" if len(ls) > 8 else "")
+                shown = ", ".join(self.locate(x) for x in ls[:8]) + (" …" if len(ls) > 8 else "")
                 out.append(f"| {k[1]} | {k[2]} | `{k[3]}` | {grouped[k]} | {shown} |")
             out.append("")
         return "\n".join(out)

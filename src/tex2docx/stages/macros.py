@@ -129,7 +129,7 @@ def inject_definitions(text: str, packages: dict[str, Path], ctx: Context) -> st
             defs.extend(defs_for(name.strip() + ext))
         if not defs:
             return m.group(0)
-        return m.group(0) + "\n" + "\n".join(defs) + "\n"
+        return m.group(0) + " ".join(defs)  # same line: keeps ctx.line_map valid
 
     return _LOAD.sub(repl, text)
 
@@ -150,4 +150,4 @@ def run(ctx: Context) -> None:
         defs.append(f"\\renewcommand{{{name}}}{{{repl}}}")
     marker = "\\begin{document}"
     if marker in ctx.tex:
-        ctx.tex = ctx.tex.replace(marker, marker + "\n" + "\n".join(defs) + "\n", 1)
+        ctx.tex = ctx.tex.replace(marker, marker + " ".join(defs), 1)

@@ -10,7 +10,7 @@ from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
 from tex2docx.stages.autolabel import insert_labels
-from tex2docx.stages.flatten import flatten_text
+from tex2docx.stages.flatten import flatten_lines, flatten_text
 from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
@@ -81,14 +81,20 @@ def test_scan_decls_styles_counters():
 
 # --- flatten -----------------------------------------------------------------
 
-def test_flatten_inputs(tmp_path: Path):
+def test_flatten_inputs_and_line_map(tmp_path: Path):
     (tmp_path / "sec").mkdir()
-    (tmp_path / "sec" / "a.tex").write_text("A \\input{sec/b}", encoding="utf-8")
+    (tmp_path / "sec" / "a.tex").write_text("A1\nA2 \\input{sec/b}", encoding="utf-8")
     (tmp_path / "sec" / "b.tex").write_text("B", encoding="utf-8")
     r = Report()
-    out = flatten_text("x \\input{sec/a} y\n%\\input{gone}\n\\include{missing}", tmp_path, r)
-    assert out.startswith("x A B y")
-    assert [i.code for i in r.items] == ["flatten.missing-input"]
+    src = "x \\input{sec/a} y\n%\\input{gone}\nz \\include{missing}"
+    lines, origins = flatten_lines(src, tmp_path, r, "main.tex")
+    assert lines == ["x ", "A1", "A2 ", "B", "", " y", "", "z \\include{missing}"]
+    assert origins == [("main.tex", 1), ("sec/a.tex", 1), ("sec/a.tex", 2), ("sec/b.tex", 1),
+                       ("sec/a.tex", 2), ("main.tex", 1), ("main.tex", 2), ("main.tex", 3)]
+    assert [(i.code, i.line) for i in r.items] == [("flatten.missing-input", 8)]
+    r.line_map, r.main_file = origins, "main.tex"
+    assert r.locate(2) == "sec/a.tex:1" and r.locate(6) == "1" and r.locate(99) == "99"
+    assert flatten_text(src, tmp_path, Report()) == "\n".join(lines)
 
 
 # --- normalize ---------------------------------------------------------------

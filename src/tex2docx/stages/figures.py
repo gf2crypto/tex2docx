@@ -67,7 +67,10 @@ def run(ctx: Context) -> None:
         return
     ctx.figures = pngs
     it = iter(pngs)
+    # keep the line count (ctx.line_map, pandoc's line numbers): pad with the
+    # newlines the environment occupied
     ctx.tex = rx.sub(
-        lambda m: f"\\includegraphics{{figures/{next(it).name}}}", ctx.tex
+        lambda m: f"\\includegraphics{{figures/{next(it).name}}}" + "\n" * m.group(0).count("\n"),
+        ctx.tex,
     )
     ctx.report.info(STAGE, "figures.rendered", str(n))

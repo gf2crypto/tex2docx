@@ -40,6 +40,9 @@ class Context:
     # Stages that change structure (autolabel) must change both in the same way.
     latex_tex: str = ""
     tex: str = ""
+    # Origin of every line of the flattened text: (file relative to source_dir, line).
+    # Stages must keep the line count of both views so that this stays valid.
+    line_map: list[tuple[str, int]] = field(default_factory=list)
 
     # Personal packages/classes (outside the TeX distribution and the source dir),
     # name -> path; filled once by texmf.personal_packages(). None = not resolved yet.
