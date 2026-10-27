@@ -36,6 +36,9 @@ class Config:
     # Environments rendered as pictures via the preview package.
     figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture", "algorithm", "algorithmic"])
     figure_dpi: int = 300
+    # Numbers as Word fields (SEQ in bookmarks, references as REF), so that Word renumbers
+    # after editing; plain-number objects only (ADR 0006). Off: numbers are text as in the PDF.
+    live_numbers: bool = False
     # CSL style for the .bib bibliography; None = bundled GOST R 7.0.5-2008 numeric (ADR 0005).
     csl: Path | None = None
     # Formula texmath cannot convert: "image" (rendered by LaTeX, see stages/mathimg.py)

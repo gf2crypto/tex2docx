@@ -11,6 +11,7 @@
 - `contains` / `not_contains` — строки в тексте docx без формул (U+00A0 сравнивается как пробел);
 - `math_min`, `images_min`, `styles` — количественные и стилевые проверки;
 - `report_absent` — коды, которых не должно быть в отчете;
+- `fields_min`, `fields_contain` — поля Word (`w:fldSimple`, по `w:instr`): живые номера;
 - `report_where` — код → `файл:строка` (относительно main.tex), где он должен быть отмечен;
 - `config.yaml` в кейсе — конфигурация конвертации (например, `engine: xelatex`);
 - папка `texmf/` в кейсе — имитация личного texmf пользователя (подставляется в `TEXMFHOME`);

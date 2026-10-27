@@ -54,19 +54,22 @@ end
 
 -- Number of one equation (or one line): "(1.2)", "X" for \tag*, or nil.
 -- Second result: cleaned math text.
+-- Returns the number as inlines (nil when none) and the cleaned math text.
 local function number_of(tex, labels)
   local num
   local tag_star, tag = tex:match('\\tag(%*?)%s*(%b{})')
   if tag then
     tag = tag:sub(2, -2)
-    num = (tag_star == '*') and tag or ('(' .. tag .. ')')
+    num = { pandoc.Str((tag_star == '*') and tag or ('(' .. tag .. ')')) }
   elseif not (tex:find('\\notag%f[%A]') or tex:find('\\nonumber%f[%A]')) then
     local label = tex:match('\\label%s*(%b{})')
     if label then
       label = label:sub(2, -2)
       local v = labels[label]
       if v then
-        num = '(' .. v .. ')'
+        num = pandoc.List({ pandoc.Str('(') })
+        num:extend(t2d.number(v, 'equation', label, v:find('%.') and 'section' or nil))
+        num:insert(pandoc.Str(')'))
       else
         t2d.report('warning', 'equations.unresolved', label)
       end
@@ -80,10 +83,10 @@ local function number_of(tex, labels)
 end
 
 local function equation_block(tex, num)
-  local inl = { TAB, pandoc.Math('InlineMath', tex) }
+  local inl = pandoc.List({ TAB, pandoc.Math('InlineMath', tex) })
   if num then
-    inl[#inl + 1] = TAB
-    inl[#inl + 1] = pandoc.Str(num)
+    inl:insert(TAB)
+    inl:extend(num)
   end
   return pandoc.Div({ pandoc.Para(inl) }, pandoc.Attr('', {}, { ['custom-style'] = 'Equation' }))
 end

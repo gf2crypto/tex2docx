@@ -8,11 +8,11 @@
 package.path = pandoc.path.directory(PANDOC_SCRIPT_FILE) .. '/?.lua;' .. package.path
 local t2d = require 't2d'
 
-local function prefix(caption, text)
+local function prefix(caption, inlines)
   local blk = caption.long and caption.long[1]
   if not blk then return end
   if blk.t == 'Plain' or blk.t == 'Para' then
-    blk.content:insert(1, pandoc.Str(text))
+    for i = #inlines, 1, -1 do blk.content:insert(1, inlines[i]) end
   end
 end
 
@@ -29,7 +29,10 @@ function Pandoc(doc)
       t2d.report('warning', 'captions.unresolved', id)
       return nil
     end
-    return (names[kind] or kind) .. ' ' .. num .. sep .. ' '
+    local inl = pandoc.List({ pandoc.Str((names[kind] or kind) .. '\194\160') })
+    inl:extend(t2d.number(num, kind, id, nil))
+    inl:insert(pandoc.Str(sep .. ' '))
+    return inl
   end
 
   return doc:walk {

@@ -44,7 +44,8 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 
 путь передается метаданными `-M t2d-meta=<path>`, фильтр читает его через `t2d.load(doc.meta)`.
 
-Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `equations` → `mathimg`.
+Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `headings` → `bibliography`
+→ `lists` → `equations` → `mathimg` → `numbers` (последний: маркеры номеров → текст или поля, ADR 0006).
 `equations` последним, потому что он разрезает абзацы, а `theorems` ищет заголовок в первом абзаце `Div`.
 
 ## Библиография

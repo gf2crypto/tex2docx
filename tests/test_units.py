@@ -345,6 +345,16 @@ def test_autolabel_nested_equation_in_theorem():
     assert "\\begin{theorem}\\label{t2d:auto:1}\n" in out
 
 
+def test_autolabel_sections():
+    src = "\\begin{document}\n\\section{A}\\label{sec:a}\n\\section[s]{B {x}}\n" \
+          "\\subsection*{C}\n\\paragraph{D} text\n\\end{document}"
+    out, n = insert_labels(src, set())
+    assert n == 2
+    assert "\\section[s]{B {x}}\\label{t2d:auto:1}\n" in out
+    assert "\\paragraph{D}\\label{t2d:auto:2} text" in out
+    assert "C}\\label" not in out
+
+
 def test_autolabel_subequations_source_order():
     src = "\\begin{document}\n\\begin{subequations}\n\\begin{equation} n \\end{equation}\n" \
           "\\end{subequations}\n\\end{document}"

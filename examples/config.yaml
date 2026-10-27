@@ -30,6 +30,10 @@ macros:
 figure_envs: [tikzpicture, algorithm, algorithmic]
 figure_dpi: 300
 
+# Живые номера: формулы/теоремы/рисунки — поля SEQ, ссылки — поля REF (Word пересчитает
+# после правок; обновить поля: Ctrl+A, F9). По умолчанию номера — текст, как в PDF.
+live_numbers: false
+
 # Стиль библиографии (CSL) для .bib; без ключа — вшитый ГОСТ Р 7.0.5-2008 (numeric).
 # csl: my-journal.csl
 

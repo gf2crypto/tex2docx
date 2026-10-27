@@ -12,7 +12,9 @@ the real LaTeX run contains its number and the filters can print it:
 - align, alignat, flalign, gather, eqnarray: at the end of every line that
   carries no \\label, \\notag, \\nonumber or \\tag (before its \\\\);
 - figure(*), table(*): right after the first \\caption{...}, when the float
-  has no \\label anywhere.
+  has no \\label anywhere;
+- \\chapter, \\section, \\subsection, \\subsubsection, \\paragraph (not starred):
+  right after the title, unless a \\label follows on the same line.
 
 Starred math environments are unnumbered and untouched. Content of verbatim-like
 environments is skipped. Labels with the prefix "t2d:auto:" are internal:
@@ -29,7 +31,7 @@ import re
 
 from ..context import Context
 from ..texmf import personal_packages
-from ..texscan import read_group, read_optional
+from ..texscan import read_group, read_optional, skip_ws
 from .theorems import collect_decls
 
 STAGE = "autolabel"
@@ -39,6 +41,9 @@ AFTER_BEGIN = {"equation", "subequations", "multline"}
 PER_LINE = {"align", "alignat", "flalign", "gather", "eqnarray"}
 FLOATS = {"figure", "figure*", "table", "table*"}
 VERBATIM = {"verbatim", "verbatim*", "lstlisting", "minted", "comment", "Verbatim"}
+
+SECTIONING = {"chapter", "section", "subsection", "subsubsection", "paragraph"}
+_SECTION = re.compile(r"(?<!\\)\\(chapter|section|subsection|subsubsection|paragraph)(\*?)\s*")
 
 _TOKEN = re.compile(
     r"\\begin\s*\{([^{}]+)\}"            # 1: environment start
@@ -153,6 +158,24 @@ def insert_labels(text: str, theorem_envs: set[str]) -> tuple[str, int]:
                 fr.line_flag = True
         elif m.group(4) is not None:
             stack[-1].depth += 1 if tok == "{" else -1
+
+    # sectioning commands: label right after the title
+    for m in _SECTION.finditer(text, body_start if body_start >= 0 else 0):
+        if m.group(2) == "*":
+            continue
+        try:
+            p = m.end()
+            _, p = read_optional(text, p)
+            p = skip_ws(text, p)
+            if p >= len(text) or text[p] != "{":
+                continue
+            _, p = read_group(text, p)
+        except ValueError:
+            continue
+        rest = text[p:text.find("\n", p) if text.find("\n", p) >= 0 else len(text)]
+        if "\\label" in rest:
+            continue
+        inserts.append(p)
 
     if not inserts:
         return text, 0

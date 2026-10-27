@@ -25,8 +25,8 @@ from ..tools import run as run_tool
 from . import StageError, mathimg
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "bibliography.lua", "lists.lua",
-           "equations.lua", "mathimg.lua"]  # order matters; --citeproc runs after them
+FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "headings.lua", "bibliography.lua",
+           "lists.lua", "equations.lua", "mathimg.lua", "numbers.lua"]  # order matters; --citeproc after
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
@@ -177,6 +177,8 @@ def run(ctx: Context) -> None:
         "styles": ctx.config.theorem_styles,
         "names": caption_names(ctx),
         "bibcites": ctx.bibcites,
+        "live_numbers": ctx.config.live_numbers,
+        "section_level": 2 if re.search(r"(?<!\\)\\chapter\b", ctx.tex) else 1,
         "mathimg": {"mode": "collect", "out": str(failed_path)},
     }
     bibs = bib_files(ctx)

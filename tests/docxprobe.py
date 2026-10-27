@@ -16,6 +16,7 @@ class DocxProbe:
     math: int
     images: int
     styles: set[str]
+    fields: list[str]  # w:instr of every simple field, in document order
 
     @classmethod
     def open(cls, path: Path) -> DocxProbe:
@@ -42,4 +43,5 @@ class DocxProbe:
             math=len(re.findall(r"<m:oMath>", s)),
             images=len(re.findall(r"<pic:pic\b", s)),
             styles=set(re.findall(r'<w:pStyle w:val="([^"]+)"', s)),
+            fields=re.findall(r'<w:fldSimple w:instr="([^"]*)"', s),
         )

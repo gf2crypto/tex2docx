@@ -19,6 +19,11 @@
 - thmtools `\declaretheorem` и стили ntheorem pandoc не знает: окружение становится `Div` без
   заголовка, необязательный аргумент теряется. `normalize` переписывает объявления в amsthm.
 
+## Заголовки
+
+- Номеров разделов writer docx не ставит; `\label` после `\section{}` становится `id` заголовка,
+  `\section*` получает класс `unnumbered`. Номер ставит `headings.lua` по `.aux`.
+
 ## Доказательство
 
 - `proof` → `Div(classes={"proof"})`, заголовок `Emph[Str "Proof."]` — всегда по-английски,

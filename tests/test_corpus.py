@@ -71,6 +71,9 @@ def test_strict(converted):
     assert probe.images >= expect.get("images_min", 0)
     missing_styles = set(expect.get("styles", [])) - probe.styles
     assert not missing_styles, f"{case}: styles not used: {missing_styles}"
+    assert len(probe.fields) >= expect.get("fields_min", 0), probe.fields
+    for f in expect.get("fields_contain", []):
+        assert f in probe.fields, f"{case}: no field {f!r} in {probe.fields}"
     codes = {i["code"] for i in report}
     bad = codes & set(expect.get("report_absent", []))
     assert not bad, f"{case}: report has {bad}"

@@ -92,7 +92,12 @@ function Pandoc(doc)
           t2d.report('warning', 'crossref.unresolved', ref)
           return nil
         end
-        text = (kind == 'eqref') and ('(' .. num .. ')') or num
+        local inl = pandoc.List({})
+        if kind == 'eqref' then inl:insert(pandoc.Str('(')) end
+        inl:extend(t2d.ref(num, ref))
+        if kind == 'eqref' then inl:insert(pandoc.Str(')')) end
+        el.content = inl
+        return el
       end
       if not text then return nil end
       el.content = { pandoc.Str(text) }

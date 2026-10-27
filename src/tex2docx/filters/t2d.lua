@@ -26,4 +26,17 @@ function M.report(level, code, detail)
   io.stderr:write(string.format('[t2d] %s %s %s\n', level, code, detail or ''))
 end
 
+-- Numbers and references are emitted as marker Spans; filters/numbers.lua (the last
+-- filter) turns them into text or, with config live_numbers, into Word fields (ADR 0006).
+-- num: as LaTeX printed it; counter: SEQ name; label: for the bookmark; within:
+-- "section" when numbered per section; level: heading level for headings.
+function M.number(num, counter, label, within, level)
+  return { pandoc.Span({ pandoc.Str(num) }, pandoc.Attr('', { 't2d-num' }, {
+    counter = counter or '', label = label or '', within = within or '', level = level and tostring(level) or '' })) }
+end
+
+function M.ref(num, label)
+  return { pandoc.Span({ pandoc.Str(num) }, pandoc.Attr('', { 't2d-ref' }, { label = label or '' })) }
+end
+
 return M

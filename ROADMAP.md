@@ -45,10 +45,12 @@
 - [x] `postprocess`: неразрывные пробелы после коротких предлогов/союзов и перед тире, keep-with-next
       (абзац перед формулой, рисунок перед подписью, подпись перед таблицей), знак конца
       доказательства по правому краю, ссылки без синего стиля Hyperlink.
-- [ ] Живые номера: поля SEQ + закладки, ссылки как поля REF (переключатель в конфиге).
+- [x] Живые номера: поля SEQ + закладки, ссылки как поля REF (`live_numbers`, ADR 0006); кейс `livenumbers`.
+- [x] Номера разделов «1 Введение» из `.aux` (`headings.lua`; pandoc в docx их не ставит).
 - [x] Библиография: `.bib` (biblatex/BibTeX) → citeproc + CSL ГОСТ Р 7.0.5 (ADR 0005);
       `thebibliography` → нумерованный список, номера цитат из `\bibcite`; кейсы `bibliography`, `thebib`.
-- [ ] Шаблоны под журналы: `examples/<journal>.yaml` + свой `reference.docx`.
+- [ ] Шаблоны под журналы: `examples/<journal>.yaml` + свой `reference.docx` — когда будут требования
+      конкретного журнала (механизм `reference_docx`/`csl`/`theorem_styles` готов).
 - [x] Алгоритмы: картинкой через `preview` (`algorithm`/`algorithmic` в `figure_envs` по умолчанию).
 
 ## Сделано, но стоит пересмотреть
