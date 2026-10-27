@@ -44,7 +44,8 @@ CLI-конвертер LaTeX → .docx для математических ст�
   (`t2d.load(doc.meta)`), о проблемах сообщают строкой `[t2d] <level> <code> <detail>` в stderr.
 - `tools.py` — единственное место, где запускаются внешние процессы.
 - `data/reference.docx` — шаблон стилей; собирается `scripts/make_reference_docx.py`,
-  результат коммитится. Стили, которые назначают фильтры (`custom-style`), должны в нем быть.
+  результат коммитится. `data/cleveref-names.json` — имена типов для `\cref` по языкам,
+  извлекаются из `cleveref.sty` скриптом `scripts/make_cleveref_names.py`. Стили, которые назначают фильтры (`custom-style`), должны в нем быть.
 
 Подробно: `docs/architecture.md`. Поведение pandoc, на которое мы опираемся
 (и которое обходим): `docs/pandoc-behavior.md` — дополняй его при каждой новой находке.

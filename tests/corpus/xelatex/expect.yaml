@@ -1,0 +1,15 @@
+# Требует engine: xelatex (config.yaml кейса).
+contains:
+  - "Теорема 1."
+  - "\t(1)"
+  - "См. 1 и (1)."
+  - "α и β"
+not_contains:
+  - "[eq:"
+math_min: 1
+styles: [Theorem, Equation]
+report_absent:
+  - crossref.unresolved
+  - theorem.unlabeled
+  - latex.compile-errors
+  - internal-error

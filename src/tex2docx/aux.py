@@ -15,12 +15,16 @@ _INPUT = re.compile(r"\\@input\{([^}]+)\}")
 def parse_aux_text(text: str) -> dict[str, Label]:
     """\\newlabel{name}{{number}{page}...} with arbitrary extra hyperref fields."""
     labels: dict[str, Label] = {}
+    cref_types: dict[str, str] = {}
     for m in _NEWLABEL.finditer(text):
         try:
             name, pos = read_group(text, m.end() - 1)
-            if name.endswith("@cref"):  # cleveref duplicates
-                continue
             body, _ = read_group(text, pos)
+            if name.endswith("@cref"):  # cleveref: {{[theorem][1][1]1.1}{...}}
+                t = re.match(r"\{\[(\w+)\]", body)
+                if t:
+                    cref_types[name[: -len("@cref")]] = t.group(1)
+                continue
             number, p2 = read_group(body, 0)
             page = ""
             if p2 < len(body) and body[p2] == "{":
@@ -28,6 +32,9 @@ def parse_aux_text(text: str) -> dict[str, Label]:
             labels[name] = Label(name=name, number=strip_tex(number), page=strip_tex(page))
         except ValueError:
             continue  # malformed entry: skip, LaTeX itself would complain
+    for name, typ in cref_types.items():
+        if name in labels:
+            labels[name].cref_type = typ
     return labels
 
 

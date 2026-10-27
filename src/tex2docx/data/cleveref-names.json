@@ -1,0 +1,626 @@
+{
+ "english": {
+  "names": {
+   "equation": {
+    "Sg": "Equation",
+    "Pl": "Equations",
+    "sg": "equation",
+    "pl": "equations"
+   },
+   "figure": {
+    "Sg": "Figure",
+    "Pl": "Figures",
+    "sg": "figure",
+    "pl": "figures"
+   },
+   "subfigure": {
+    "Sg": "Figure",
+    "Pl": "Figures",
+    "sg": "figure",
+    "pl": "figures"
+   },
+   "table": {
+    "Sg": "Table",
+    "Pl": "Tables",
+    "sg": "table",
+    "pl": "tables"
+   },
+   "subtable": {
+    "Sg": "Table",
+    "Pl": "Tables",
+    "sg": "table",
+    "pl": "tables"
+   },
+   "page": {
+    "Sg": "Page",
+    "Pl": "Pages",
+    "sg": "page",
+    "pl": "pages"
+   },
+   "part": {
+    "Sg": "Part",
+    "Pl": "Parts",
+    "sg": "part",
+    "pl": "parts"
+   },
+   "chapter": {
+    "Sg": "Chapter",
+    "Pl": "Chapters",
+    "sg": "chapter",
+    "pl": "chapters"
+   },
+   "section": {
+    "Sg": "Section",
+    "Pl": "Sections",
+    "sg": "section",
+    "pl": "sections"
+   },
+   "subsection": {
+    "Sg": "Section",
+    "Pl": "Sections",
+    "sg": "section",
+    "pl": "sections"
+   },
+   "subsubsection": {
+    "Sg": "Section",
+    "Pl": "Sections",
+    "sg": "section",
+    "pl": "sections"
+   },
+   "appendix": {
+    "Sg": "Appendix",
+    "Pl": "Appendices",
+    "sg": "appendix",
+    "pl": "appendices"
+   },
+   "subappendix": {
+    "Sg": "Appendix",
+    "Pl": "Appendices",
+    "sg": "appendix",
+    "pl": "appendices"
+   },
+   "subsubappendix": {
+    "Sg": "Appendix",
+    "Pl": "Appendices",
+    "sg": "appendix",
+    "pl": "appendices"
+   },
+   "subsubsubappendix": {
+    "Sg": "Appendix",
+    "Pl": "Appendices",
+    "sg": "appendix",
+    "pl": "appendices"
+   },
+   "enumi": {
+    "Sg": "Item",
+    "Pl": "Items",
+    "sg": "item",
+    "pl": "items"
+   },
+   "enumii": {
+    "Sg": "Item",
+    "Pl": "Items",
+    "sg": "item",
+    "pl": "items"
+   },
+   "enumiii": {
+    "Sg": "Item",
+    "Pl": "Items",
+    "sg": "item",
+    "pl": "items"
+   },
+   "enumiv": {
+    "Sg": "Item",
+    "Pl": "Items",
+    "sg": "item",
+    "pl": "items"
+   },
+   "enumv": {
+    "Sg": "Item",
+    "Pl": "Items",
+    "sg": "item",
+    "pl": "items"
+   },
+   "footnote": {
+    "Sg": "Footnote",
+    "Pl": "Footnotes",
+    "sg": "footnote",
+    "pl": "footnotes"
+   },
+   "theorem": {
+    "Sg": "Theorem",
+    "Pl": "Theorems",
+    "sg": "theorem",
+    "pl": "theorems"
+   },
+   "lemma": {
+    "Sg": "Lemma",
+    "Pl": "Lemmas",
+    "sg": "lemma",
+    "pl": "lemmas"
+   },
+   "corollary": {
+    "Sg": "Corollary",
+    "Pl": "Corollaries",
+    "sg": "corollary",
+    "pl": "corollaries"
+   },
+   "proposition": {
+    "Sg": "Proposition",
+    "Pl": "Propositions",
+    "sg": "proposition",
+    "pl": "propositions"
+   },
+   "definition": {
+    "Sg": "Definition",
+    "Pl": "Definitions",
+    "sg": "definition",
+    "pl": "definitions"
+   },
+   "result": {
+    "Sg": "Result",
+    "Pl": "Results",
+    "sg": "result",
+    "pl": "results"
+   },
+   "example": {
+    "Sg": "Example",
+    "Pl": "Examples",
+    "sg": "example",
+    "pl": "examples"
+   },
+   "remark": {
+    "Sg": "Remark",
+    "Pl": "Remarks",
+    "sg": "remark",
+    "pl": "remarks"
+   },
+   "note": {
+    "Sg": "Note",
+    "Pl": "Notes",
+    "sg": "note",
+    "pl": "notes"
+   },
+   "algorithm": {
+    "Sg": "Algorithm",
+    "Pl": "Algorithms",
+    "sg": "algorithm",
+    "pl": "algorithms"
+   },
+   "listing": {
+    "Sg": "Listing",
+    "Pl": "Listings",
+    "sg": "listing",
+    "pl": "listings"
+   },
+   "line": {
+    "Sg": "Line",
+    "Pl": "Lines",
+    "sg": "line",
+    "pl": "lines"
+   }
+  },
+  "conjunctions": {
+   "pair": "and",
+   "middle": ",",
+   "last": "and",
+   "range": "to"
+  }
+ },
+ "russian": {
+  "names": {
+   "page": {
+    "Sg": "Страница",
+    "Pl": "Страницы",
+    "sg": "странице",
+    "pl": "страницах"
+   },
+   "equation": {
+    "Sg": "Формула",
+    "Pl": "Формулы",
+    "sg": "формула",
+    "pl": "формулы"
+   },
+   "figure": {
+    "Sg": "Рисунок",
+    "Pl": "Рисунки",
+    "sg": "рисунок",
+    "pl": "рисунки"
+   },
+   "subfigure": {
+    "Sg": "Рисунок",
+    "Pl": "Рисунки",
+    "sg": "рисунок",
+    "pl": "рисунки"
+   },
+   "table": {
+    "Sg": "Таблица",
+    "Pl": "Таблицы",
+    "sg": "таблица",
+    "pl": "таблицы"
+   },
+   "subtable": {
+    "Sg": "Таблица",
+    "Pl": "Таблицы",
+    "sg": "таблица",
+    "pl": "таблицы"
+   },
+   "part": {
+    "Sg": "Часть",
+    "Pl": "Части",
+    "sg": "часть",
+    "pl": "части"
+   },
+   "chapter": {
+    "Sg": "Глава",
+    "Pl": "Главы",
+    "sg": "глава",
+    "pl": "главы"
+   },
+   "section": {
+    "Sg": "Раздел",
+    "Pl": "Разделы",
+    "sg": "раздел",
+    "pl": "разделы"
+   },
+   "subsection": {
+    "Sg": "Раздел",
+    "Pl": "Разделы",
+    "sg": "раздел",
+    "pl": "разделы"
+   },
+   "subsubsection": {
+    "Sg": "Раздел",
+    "Pl": "Разделы",
+    "sg": "раздел",
+    "pl": "разделы"
+   },
+   "appendix": {
+    "Sg": "Приложение",
+    "Pl": "Приложения",
+    "sg": "приложение",
+    "pl": "приложения"
+   },
+   "subappendix": {
+    "Sg": "Приложение",
+    "Pl": "Приложения",
+    "sg": "приложение",
+    "pl": "приложения"
+   },
+   "subsubappendix": {
+    "Sg": "Приложение",
+    "Pl": "Приложения",
+    "sg": "приложение",
+    "pl": "приложения"
+   },
+   "subsubsubappendix": {
+    "Sg": "Приложение",
+    "Pl": "Приложения",
+    "sg": "приложение",
+    "pl": "приложения"
+   },
+   "enumi": {
+    "Sg": "Пункт",
+    "Pl": "Пункты",
+    "sg": "пункт",
+    "pl": "пункты"
+   },
+   "enumii": {
+    "Sg": "Пункт",
+    "Pl": "Пункты",
+    "sg": "пункт",
+    "pl": "пункты"
+   },
+   "enumiii": {
+    "Sg": "Пункт",
+    "Pl": "Пункты",
+    "sg": "пункт",
+    "pl": "пункты"
+   },
+   "enumiv": {
+    "Sg": "Пункт",
+    "Pl": "Пункты",
+    "sg": "пункт",
+    "pl": "пункты"
+   },
+   "enumv": {
+    "Sg": "Пункт",
+    "Pl": "Пункты",
+    "sg": "пункт",
+    "pl": "пункты"
+   },
+   "footnote": {
+    "Sg": "Сноска",
+    "Pl": "Сноски",
+    "sg": "сноска",
+    "pl": "сноски"
+   },
+   "theorem": {
+    "Sg": "Теорема",
+    "Pl": "Теоремы",
+    "sg": "теорема",
+    "pl": "теоремы"
+   },
+   "lemma": {
+    "Sg": "Лемма",
+    "Pl": "Леммы",
+    "sg": "лемма",
+    "pl": "леммы"
+   },
+   "corollary": {
+    "Sg": "Вывод",
+    "Pl": "Выводы",
+    "sg": "вывод",
+    "pl": "выводы"
+   },
+   "proposition": {
+    "Sg": "Утверждение",
+    "Pl": "Утверждения",
+    "sg": "утверждение",
+    "pl": "утверждения"
+   },
+   "definition": {
+    "Sg": "Определение",
+    "Pl": "Определения",
+    "sg": "определение",
+    "pl": "определения"
+   },
+   "result": {
+    "Sg": "Результат",
+    "Pl": "Результаты",
+    "sg": "результат",
+    "pl": "результаты"
+   },
+   "example": {
+    "Sg": "Пример",
+    "Pl": "Примеры",
+    "sg": "пример",
+    "pl": "примеры"
+   },
+   "remark": {
+    "Sg": "Примечание",
+    "Pl": "Примечания",
+    "sg": "примечание",
+    "pl": "примечания"
+   },
+   "note": {
+    "Sg": "Заметка",
+    "Pl": "Заметки",
+    "sg": "заметка",
+    "pl": "заметки"
+   },
+   "algorithm": {
+    "Sg": "Алгоритм",
+    "Pl": "Алгоритмы",
+    "sg": "алгоритм",
+    "pl": "алгоритмы"
+   },
+   "listing": {
+    "Sg": "Листинг",
+    "Pl": "Листинги",
+    "sg": "листинг",
+    "pl": "листинги"
+   },
+   "line": {
+    "Sg": "Строка",
+    "Pl": "Строки",
+    "sg": "строка",
+    "pl": "строки"
+   }
+  },
+  "conjunctions": {
+   "pair": "и",
+   "middle": ",",
+   "last": "и",
+   "range": "--"
+  }
+ },
+ "ukrainian": {
+  "names": {
+   "equation": {
+    "Sg": "Формула",
+    "Pl": "Формули",
+    "sg": "формула",
+    "pl": "формули"
+   },
+   "figure": {
+    "Sg": "Рисунок",
+    "Pl": "Рисунки",
+    "sg": "рисунок",
+    "pl": "рисунки"
+   },
+   "subfigure": {
+    "Sg": "Рисунок",
+    "Pl": "Рисунки",
+    "sg": "рисунок",
+    "pl": "рисунки"
+   },
+   "table": {
+    "Sg": "Таблиця",
+    "Pl": "Таблиці",
+    "sg": "таблиця",
+    "pl": "таблиці"
+   },
+   "subtable": {
+    "Sg": "Таблиця",
+    "Pl": "Таблиці",
+    "sg": "таблиця",
+    "pl": "таблиці"
+   },
+   "enumi": {
+    "Sg": "Пункт",
+    "Pl": "Пункти",
+    "sg": "пункт",
+    "pl": "пункти"
+   },
+   "enumii": {
+    "Sg": "Пункт",
+    "Pl": "Пункти",
+    "sg": "пункт",
+    "pl": "пункти"
+   },
+   "enumiii": {
+    "Sg": "Пункт",
+    "Pl": "Пункти",
+    "sg": "пункт",
+    "pl": "пункти"
+   },
+   "enumiv": {
+    "Sg": "Пункт",
+    "Pl": "Пункти",
+    "sg": "пункт",
+    "pl": "пункти"
+   },
+   "enumv": {
+    "Sg": "Пункт",
+    "Pl": "Пункти",
+    "sg": "пункт",
+    "pl": "пункти"
+   },
+   "chapter": {
+    "Sg": "Глава",
+    "Pl": "Глави",
+    "sg": "глава",
+    "pl": "глави"
+   },
+   "section": {
+    "Sg": "Розділ",
+    "Pl": "Розділи",
+    "sg": "розділ",
+    "pl": "розділи"
+   },
+   "subsection": {
+    "Sg": "Розділ",
+    "Pl": "Розділи",
+    "sg": "розділ",
+    "pl": "розділи"
+   },
+   "subsubsection": {
+    "Sg": "Розділ",
+    "Pl": "Розділи",
+    "sg": "розділ",
+    "pl": "розділи"
+   },
+   "appendix": {
+    "Sg": "Додаток",
+    "Pl": "Додатки",
+    "sg": "додаток",
+    "pl": "додатки"
+   },
+   "subappendix": {
+    "Sg": "Додаток",
+    "Pl": "Додатки",
+    "sg": "додаток",
+    "pl": "додатки"
+   },
+   "subsubappendix": {
+    "Sg": "Додаток",
+    "Pl": "Додатки",
+    "sg": "додаток",
+    "pl": "додатки"
+   },
+   "subsubsubappendix": {
+    "Sg": "Додаток",
+    "Pl": "Додатки",
+    "sg": "додаток",
+    "pl": "додатки"
+   },
+   "footnote": {
+    "Sg": "Виноска",
+    "Pl": "Виноски",
+    "sg": "виноска",
+    "pl": "виноски"
+   },
+   "theorem": {
+    "Sg": "Теорема",
+    "Pl": "Теореми",
+    "sg": "теорема",
+    "pl": "теореми"
+   },
+   "lemma": {
+    "Sg": "Лемма",
+    "Pl": "Лемми",
+    "sg": "лемма",
+    "pl": "лемми"
+   },
+   "corollary": {
+    "Sg": "Висновок",
+    "Pl": "Висновки",
+    "sg": "висновок",
+    "pl": "висновки"
+   },
+   "proposition": {
+    "Sg": "Твердження",
+    "Pl": "Твердження",
+    "sg": "твердження",
+    "pl": "твердження"
+   },
+   "definition": {
+    "Sg": "Визначення",
+    "Pl": "Визначення",
+    "sg": "визначення",
+    "pl": "визначення"
+   },
+   "result": {
+    "Sg": "Результат",
+    "Pl": "Результати",
+    "sg": "результат",
+    "pl": "результати"
+   },
+   "example": {
+    "Sg": "Приклад",
+    "Pl": "Приклади",
+    "sg": "приклад",
+    "pl": "приклади"
+   },
+   "remark": {
+    "Sg": "Примітка",
+    "Pl": "Примітки",
+    "sg": "примітка",
+    "pl": "примітки"
+   },
+   "note": {
+    "Sg": "Замітка",
+    "Pl": "Замітки",
+    "sg": "замітка",
+    "pl": "замітки"
+   },
+   "algorithm": {
+    "Sg": "Алгоритм",
+    "Pl": "Алгоритми",
+    "sg": "алгоритм",
+    "pl": "алгоритми"
+   },
+   "listing": {
+    "Sg": "Лістинг",
+    "Pl": "Лістинги",
+    "sg": "лістинг",
+    "pl": "лістинги"
+   },
+   "line": {
+    "Sg": "Строка",
+    "Pl": "Строки",
+    "sg": "строка",
+    "pl": "строки"
+   },
+   "page": {
+    "Sg": "Сторинка",
+    "Pl": "Сторінки",
+    "sg": "сторинці",
+    "pl": "сторінках"
+   },
+   "part": {
+    "Sg": "Частина",
+    "Pl": "Частини",
+    "sg": "частина",
+    "pl": "частини"
+   }
+  },
+  "conjunctions": {
+   "pair": "і",
+   "middle": ",",
+   "last": "і",
+   "range": "--"
+  }
+ }
+}

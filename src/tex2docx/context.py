@@ -14,6 +14,7 @@ class Label:
     name: str
     number: str  # exactly as LaTeX printed it, e.g. "1.2" or "(i)"
     page: str = ""
+    cref_type: str = ""  # counter name from cleveref's name@cref entry, e.g. "theorem"
 
 
 @dataclass

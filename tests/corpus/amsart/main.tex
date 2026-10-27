@@ -1,0 +1,51 @@
+% Синтетический кейс: класс amsart (теоремы, \maketitle с \address, \subjclass, abstract).
+\documentclass[12pt]{amsart}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amssymb}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{lemma}[theorem]{Лемма}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Определение}
+\numberwithin{equation}{section}
+
+\title{Статья в amsart}
+\author{Автор Первый}
+\address{Университет}
+\email{first@example.org}
+\subjclass[2020]{94B05}
+\keywords{код, вес}
+
+\begin{document}
+
+\begin{abstract}
+Краткая аннотация.
+\end{abstract}
+
+\maketitle
+
+\section{Введение}
+
+\begin{definition}\label{def:a}
+Определение в amsart.
+\end{definition}
+
+\begin{theorem}\label{thm:a}
+Теорема в amsart с формулой
+\begin{equation}\label{eq:a}
+  x \in \mathbb{F}_q .
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+По определению~\ref{def:a} и~\eqref{eq:a}.
+\end{proof}
+
+\begin{lemma}
+Лемма без метки.
+\end{lemma}
+
+\end{document}

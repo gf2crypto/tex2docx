@@ -37,7 +37,8 @@
 - [x] Отображение строк отчета на исходные файлы (`ctx.line_map`; этапы сохраняют число строк).
 - [ ] thmtools (`\declaretheorem`), ntheorem.
 - [x] Кейс корпуса: документ из нескольких файлов (`multifile`).
-- [ ] Кейсы корпуса: `amsart`, `article`+hyperref+cleveref, xelatex+fontspec.
+- [x] Кейсы корпуса: `amsart`, `cleveref` (hyperref + `\cref`/`\Cref`/`\crefrange`/`\autoref`
+      с именами из cleveref и `\crefname`), `xelatex` (fontspec + polyglossia + unicode-math).
 
 ## M3 — полировка Word
 

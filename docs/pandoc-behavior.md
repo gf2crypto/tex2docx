@@ -29,6 +29,9 @@
 - `\ref{x}` → `Link` с атрибутами `reference-type=ref`, `reference=x`; текст — номер pandoc
   (неверный для теорем, см. выше).
 - `\eqref{x}` → текст `[x]`: номера формул pandoc не знает вовсе.
+- `\cref{x}` → такой же `Link` с `reference-type=ref` (отличить от `\ref` нельзя), `\Cref{x}` исчезает
+  целиком, `\autoref{x}` → `reference-type=autoref` с текстом `[x]`. Поэтому `normalize` переписывает
+  `\cref`/`\Cref`/`\crefrange` в `\ref{cref:...}`, а тип объекта берется из `label@cref` в `.aux`.
 
 ## Метки (проверено 2026-10-27)
 

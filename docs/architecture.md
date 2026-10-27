@@ -38,7 +38,8 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 ```json
 {"labels": {"thm:main": "1.2"}, "theorems": {"theorem": {"style": "plain", "numbered": true, ...}},
  "proof_name": "Доказательство", "styles": {"plain": "Theorem", ...},
- "names": {"figure": "Рис.", "table": "Таблица", "sep": "."}}
+ "names": {"figure": "Рис.", "table": "Таблица", "sep": "."},
+ "types": {"thm:main": "theorem"}, "cref": {"names": {"theorem": {"sg": "теорема", ...}}, "conjunctions": {...}}}
 ```
 
 путь передается метаданными `-M t2d-meta=<path>`, фильтр читает его через `t2d.load(doc.meta)`.

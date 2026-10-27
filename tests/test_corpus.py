@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tex2docx.config import Config
 from tex2docx.pipeline import convert
 
 from .docxprobe import DocxProbe
@@ -35,8 +36,9 @@ def convert_case(case: str, out: Path) -> None:
     saved = os.environ.get("TEXMFHOME")
     if texmf.is_dir():
         os.environ["TEXMFHOME"] = "{" + str(texmf) + ("," + saved if saved else "") + "}"
+    cfg = CORPUS / case / "config.yaml"
     try:
-        convert(CORPUS / case / "main.tex", out)
+        convert(CORPUS / case / "main.tex", out, Config.load(cfg) if cfg.is_file() else None)
     finally:
         if texmf.is_dir():
             if saved is None:

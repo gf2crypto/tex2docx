@@ -55,6 +55,7 @@ def test_aux_plain_and_hyperref():
 """
     labels = parse_aux_text(aux)
     assert labels["thm:main"].number == "1.2"
+    assert labels["thm:main"].cref_type == "theorem" and labels["eq:x"].cref_type == ""
     assert labels["eq:x"].number == "2.1" and labels["eq:x"].page == "3"
     assert labels["it:a"].number == "(i)"
     assert "thm:main@cref" not in labels
@@ -103,6 +104,11 @@ def test_babel_shorthands():
     assert normalize_text('код "--- это') == "код --- это"
     assert normalize_text('Шура"=Адамара') == "Шура-Адамара"
     assert normalize_text(r'\"o') == r'\"o'
+
+
+def test_normalize_cref():
+    assert normalize_text(r"\cref{a}, \Cref{b, c} и \crefrange{d}{e}") \
+        == r"\ref{cref:a}, \ref{Cref:b, c} и \ref{crefrange:d,e}"
 
 
 def test_normalize_math_envs():

@@ -17,6 +17,7 @@ from importlib import resources
 from pathlib import Path
 
 from ..context import Context
+from ..texmf import personal_packages
 from ..texscan import babel_languages
 from ..tools import ToolError, require
 from ..tools import run as run_tool
@@ -30,6 +31,34 @@ CAPTION_NAMES = {  # babel language -> (figure, table, separator after the numbe
     "ukrainian": ("Рис.", "Таблиця", "."),
     "english": ("Figure", "Table", ":"),
 }
+
+
+_CREFNAME = re.compile(r"(?<!\\)\\(crefname|Crefname)\s*\{(\w+)\}\s*\{([^{}]*)\}\s*\{([^{}]*)\}")
+
+
+def cref_names(ctx: Context) -> dict:
+    """cleveref names: the language defaults (data/cleveref-names.json, extracted from
+    cleveref.sty) overridden by \\crefname/\\Crefname of the document and personal packages."""
+    langs = babel_languages(ctx.tex)
+    lang = langs[-1] if langs else "english"
+    table = json.loads(_pkg_path("data", "cleveref-names.json").read_text(encoding="utf-8"))
+    base = table.get(lang) or table["english"]
+    names = {k: dict(v) for k, v in base["names"].items()}
+    sources = [p.read_text(encoding="utf-8", errors="replace")
+               for p in personal_packages(ctx).values()] + [ctx.tex]
+    for src in sources:
+        for m in _CREFNAME.finditer(src):
+            kind, typ, sg, pl = m.groups()
+            d = names.setdefault(typ, {})
+            if kind == "crefname":
+                d["sg"], d["pl"] = sg.strip(), pl.strip()
+                d.setdefault("Sg", sg.strip()[:1].upper() + sg.strip()[1:])
+                d.setdefault("Pl", pl.strip()[:1].upper() + pl.strip()[1:])
+            else:
+                d["Sg"], d["Pl"] = sg.strip(), pl.strip()
+                d.setdefault("sg", sg.strip()[:1].lower() + sg.strip()[1:])
+                d.setdefault("pl", pl.strip()[:1].lower() + pl.strip()[1:])
+    return {"names": names, "conjunctions": base["conjunctions"]}
 
 
 def caption_names(ctx: Context) -> dict[str, str]:
@@ -109,6 +138,8 @@ def run(ctx: Context) -> None:
     failed_path = ctx.workdir / "mathfail.json"
     data = {
         "labels": {k: v.number for k, v in ctx.labels.items()},
+        "types": {k: v.cref_type for k, v in ctx.labels.items() if v.cref_type},
+        "cref": cref_names(ctx),
         "theorems": {k: asdict(v) for k, v in ctx.theorems.items()},
         "proof_name": ctx.config.proof_name,
         "styles": ctx.config.theorem_styles,
