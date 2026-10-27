@@ -26,7 +26,7 @@ pytest -q                            # проверка, что все на ме
 ```
 
 Windows без интернета: `docs/windows-offline.md` (что скачать заранее и как проверить
-командой `tex2docx --check`).
+командой `tex2docx --check`); переносимая папка без установщиков — `docs/windows-portable.md`.
 
 ## Использование
 
