@@ -21,7 +21,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 | macros | `stages/macros.py` | ручные переопределения из конфига | частично |
 | figures | `stages/figures.py` | `preview` → PNG → `\includegraphics` | готов |
 | pandoc | `stages/pandoc_run.py` | pandoc + фильтры, сбор сообщений | готов |
-| postprocess | `stages/postprocess.py` | правки docx | заглушка |
+| postprocess | `stages/postprocess.py` | типографика, keep-with-next, знак конца доказательства, вид ссылок | частично (M3) |
 
 ## Два представления исходника
 

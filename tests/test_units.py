@@ -13,6 +13,7 @@ from tex2docx.stages.autolabel import insert_labels
 from tex2docx.stages.flatten import flatten_text
 from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
+from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls
 from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
@@ -103,6 +104,40 @@ def test_normalize_math_envs():
     assert normalize_text("\\begin{subequations}\\label{s}\n\\begin{equation}\\label{a} x "
                           "\\end{equation}\n\\end{subequations}") \
         == "\n\\begin{equation}\\label{a} x \\end{equation}\n"
+
+
+# --- postprocess -------------------------------------------------------------
+
+def test_nbsp_text():
+    assert nbsp_text("Пусть в поле и к нему") == "Пусть в\u00a0поле и\u00a0к\u00a0нему"
+    assert nbsp_text("В начале. А потом") == "В\u00a0начале. А\u00a0потом"
+    assert nbsp_text("код — это") == "код\u00a0— это"
+    assert nbsp_text("или-или и т. д.") == "или-или и\u00a0т. д."
+    assert nbsp_text("x и ") == "x и "  # nothing to glue to
+
+
+def test_postprocess_qed_and_keep_next():
+    from lxml import etree
+
+    xml = f"""<w:document xmlns:w="{W}"><w:body>
+<w:p><w:pPr><w:pStyle w:val="BodyText"/></w:pPr><w:r><w:t>intro:</w:t></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="Equation"/></w:pPr><w:r><w:tab/></w:r></w:p>
+<w:p><w:pPr><w:pStyle w:val="Proof"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>Proof.</w:t></w:r>
+<w:r><w:t>done.\u00a0\u25fb</w:t></w:r></w:p>
+<w:sectPr><w:pgSz w:w="11906"/><w:pgMar w:left="1417" w:right="1417"/></w:sectPr>
+</w:body></w:document>"""
+    root = etree.fromstring(xml)
+    counts = process_document(root)
+    assert counts["qed"] == 1 and counts["keep_next"] == 1
+    paras = root.findall(f".//{{{W}}}p")
+    assert paras[0].find(f"{{{W}}}pPr/{{{W}}}keepNext") is not None
+    assert paras[1].find(f"{{{W}}}pPr/{{{W}}}keepNext") is None
+    proof = paras[2]
+    tab = proof.find(f"{{{W}}}pPr/{{{W}}}tabs/{{{W}}}tab")
+    assert tab.get(f"{{{W}}}val") == "right" and tab.get(f"{{{W}}}pos") == "9072"
+    texts = [t.text for t in proof.iter(f"{{{W}}}t")]
+    assert texts == ["Proof.", "done.", "\u25fb"]
+    assert proof.findall(f"{{{W}}}r/{{{W}}}tab")
 
 
 # --- pandoc message collection ----------------------------------------------

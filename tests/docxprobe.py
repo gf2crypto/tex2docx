@@ -31,6 +31,8 @@ class DocxProbe:
                 if any(a.tag.startswith("{http://schemas.openxmlformats.org/officeDocument/2006/math}")
                        for a in el.iterancestors()):
                     continue
+                if el.tag == f"{W}tab" and el.getparent().tag != f"{W}r":
+                    continue  # a tab stop definition in w:pPr/w:tabs, not a character
                 parts.append("\t" if el.tag == f"{W}tab" else (el.text or ""))
             paras.append("".join(parts))
         s = xml.decode("utf-8")

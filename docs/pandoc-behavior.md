@@ -23,6 +23,9 @@
 
 ## Ссылки
 
+- `\ref`/`\eqref` в docx — `w:hyperlink w:anchor=<label>` на закладку с символьным стилем
+  `Hyperlink` (синий, подчеркнутый). `postprocess` снимает стиль, ссылка остается.
+
 - `\ref{x}` → `Link` с атрибутами `reference-type=ref`, `reference=x`; текст — номер pandoc
   (неверный для теорем, см. выше).
 - `\eqref{x}` → текст `[x]`: номера формул pandoc не знает вовсе.
