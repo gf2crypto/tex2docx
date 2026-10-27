@@ -34,7 +34,10 @@ class Config:
     # Manual macro overrides: {"\\matr": "\\mathbf"}. Applied before pandoc.
     macros: dict[str, str] = field(default_factory=dict)
     # Environments rendered as pictures via the preview package.
-    figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture", "algorithm", "algorithmic"])
+    figure_envs: list[str] = field(default_factory=lambda: [
+        "tikzpicture", "algorithm", "algorithmic",
+        "pchstack", "pcvstack", "procedure", "pseudocode",  # cryptocode
+    ])
     figure_dpi: int = 300
     # Numbers as Word fields (SEQ in bookmarks, references as REF), so that Word renumbers
     # after editing; plain-number objects only (ADR 0006). Off: numbers are text as in the PDF.

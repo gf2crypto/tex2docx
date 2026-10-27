@@ -119,6 +119,10 @@
   `x.bib` в метаданные, `\printbibliography` пропускает. `thebibliography` → `Div` с текстом без `\bibitem`
   (ключи потеряны). `[WARNING] Citeproc: citation <key> not found` — неизвестный ключ.
 
+- `figure*`/`table*` pandoc не знает (содержимое пропадает) — `normalize` делает из них `figure`/`table`.
+- Второй `\title` превращает метаданные title в список, и writer docx не печатает заголовок вовсе.
+- `<<`/`>>` остаются буквально (в T2A и с `Ligatures=TeX` это кавычки) — `normalize` ставит « ».
+
 ## Сообщения
 
 - С `--verbose` пропущенные команды выводятся как

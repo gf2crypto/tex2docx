@@ -10,13 +10,15 @@ from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
 from tex2docx.stages.autolabel import insert_labels
+from tex2docx.stages.figures import outermost_spans
 from tex2docx.stages.flatten import flatten_lines, flatten_text, read_source, source_encoding
-from tex2docx.stages.normalize import normalize_text
+from tex2docx.stages.normalize import normalize_text, second_title_block
 from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
 from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls, theorems_to_amsthm
 from tex2docx.texmf import expand_braces, package_requests
+from tex2docx.tools import unwrap_log
 from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
 # --- texscan -----------------------------------------------------------------
@@ -42,6 +44,12 @@ def test_babel_languages():
     assert babel_languages(r"\usepackage[english,russian]{babel}") == ["english", "russian"]
     assert babel_languages(r"\usepackage[main=russian, english]{babel}") == ["russian", "english"]
     assert babel_languages(r"\usepackage{babel}") == []
+
+
+def test_unwrap_log():
+    long = "x" * 79
+    assert unwrap_log(long + "\ntail\nnext") == [long + "tail", "next"]
+    assert unwrap_log("a\nb") == ["a", "b"]
 
 
 # --- aux ---------------------------------------------------------------------
@@ -158,6 +166,14 @@ def test_babel_shorthands():
     assert normalize_text(r'\"o') == r'\"o'
 
 
+def test_normalize_guillemets_and_second_title():
+    assert normalize_text('АО <<НПК <<Криптонит>>') == "АО «НПК «Криптонит»"
+    src = "\\title{A}\\author{B}\\maketitle\n\\title{Eng {t}}\n\\author{C}\\maketitleeng\n"
+    assert second_title_block(src) == \
+        "\\title{A}\\author{B}\\maketitle\n\\begin{center}\\textbf{Eng {t}}\\end{center}\n" \
+        "\\begin{center}C\\end{center}\n"
+
+
 def test_normalize_cref():
     assert normalize_text(r"\cref{a}, \Cref{b, c} и \crefrange{d}{e}") \
         == r"\ref{cref:a}, \ref{Cref:b, c} и \ref{crefrange:d,e}"
@@ -170,6 +186,18 @@ def test_normalize_math_envs():
     assert normalize_text("\\begin{subequations}\\label{s}\n\\begin{equation}\\label{a} x "
                           "\\end{equation}\n\\end{subequations}") \
         == "\n\\begin{equation}\\label{a} x \\end{equation}\n"
+
+
+# --- figures -----------------------------------------------------------------
+
+def test_outermost_spans():
+    src = "a \\begin{algorithm}x\\begin{algorithmic}y\\end{algorithmic}z\\end{algorithm} b " \
+          "\\begin{algorithmic}q\\end{algorithmic} c \\end{algorithm}"
+    spans = outermost_spans(src, ["algorithm", "algorithmic"])
+    assert [src[a:b] for a, b in spans] == [
+        "\\begin{algorithm}x\\begin{algorithmic}y\\end{algorithmic}z\\end{algorithm}",
+        "\\begin{algorithmic}q\\end{algorithmic}",
+    ]
 
 
 # --- postprocess -------------------------------------------------------------

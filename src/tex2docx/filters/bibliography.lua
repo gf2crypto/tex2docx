@@ -42,9 +42,9 @@ function Pandoc(doc)
       local nums = {}
       for _, cit in ipairs(c.citations) do
         local n = bibcites[cit.id]
-        if not n then
+        if not n then  -- LaTeX prints [?] for these too
           t2d.report('warning', 'bibliography.unknown-key', cit.id)
-          return nil
+          return { pandoc.Str('[?]') }
         end
         nums[#nums + 1] = n
       end

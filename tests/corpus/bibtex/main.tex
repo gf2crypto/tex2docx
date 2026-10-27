@@ -1,0 +1,35 @@
+% Синтетический кейс: BibTeX с двумя библиографиями (multibbl), списки из .bbl,
+% пути с ./, второй титульный блок после \maketitle, figure*, <<кавычки>>.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{amsmath}
+\usepackage{multibbl}
+\newbibliography{rus}
+\newbibliography{eng}
+
+\begin{document}
+\title{Статья с BibTeX}
+\author{А. Автор}
+\maketitle
+
+\section{Цитаты}
+В АО <<НПК <<Криптонит>> читают~\cite{rus}{knuth2000} и~\cite{rus}{knuth2000,lamport1978}.
+
+\begin{figure*}[h]
+\centering
+Текст рисунка на две колонки
+\caption{Широкий рисунок}\label{fig:wide}
+\end{figure*}
+См. рис.~\ref{fig:wide}.
+
+\bibliographystyle{rus}{unsrt}
+\bibliography{rus}{./bib/refs}{Библиография}
+
+\title{Article with BibTeX}
+\author{A. Author}
+\nocite{eng}{*}
+\bibliographystyle{eng}{unsrt}
+\bibliography{eng}{./bib/refs_en}{References}
+\end{document}

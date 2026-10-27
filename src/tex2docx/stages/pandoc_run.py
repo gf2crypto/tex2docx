@@ -16,7 +16,7 @@ from dataclasses import asdict
 from importlib import resources
 from pathlib import Path
 
-from ..bibliography import ABSTRACT_TITLES, BIB_TITLES, bib_files
+from ..bibliography import ABSTRACT_TITLES, BIB_TITLES, KEYWORDS_TITLES, bib_files, is_bibtex
 from ..context import Context
 from ..texmf import personal_packages
 from ..texscan import babel_languages
@@ -71,7 +71,8 @@ def caption_names(ctx: Context) -> dict[str, str]:
     return {"figure": c.figure_name or fig, "table": c.table_name or tab,
             "sep": c.caption_sep if c.caption_sep is not None else sep,
             "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"]),
-            "abstract": ABSTRACT_TITLES.get(lang, ABSTRACT_TITLES["english"])}
+            "abstract": ABSTRACT_TITLES.get(lang, ABSTRACT_TITLES["english"]),
+            "keywords": KEYWORDS_TITLES.get(lang, KEYWORDS_TITLES["english"])}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
 _MATH_FAIL = re.compile(r"^\[WARNING\] Could not convert TeX math")
@@ -88,9 +89,10 @@ HARMLESS_SKIPS = {
     "\\theorembodyfont", "\\theoremheaderfont", "\\theoremsymbol", "\\theoremseparator",
     "\\theoremindent", "\\theorempreskip", "\\theorempostskip", "\\theoremnumbering",
     "\\theoremprework", "\\theorempostwork", "\\declaretheoremstyle", "\\qedsymbol",
-    "\\begin{t2dabstract}", "\\end{t2dabstract}", "\\begin{titlingpage}", "\\end{titlingpage}",
+    "\\begin{t2dabstract}", "\\end{t2dabstract}", "\\begin{t2dkeywords}", "\\end{t2dkeywords}", "\\begin{titlingpage}", "\\end{titlingpage}",
     "\\begin{flushleft}", "\\end{flushleft}", "\\begin{flushright}", "\\end{flushright}",
     "\\begin{center}", "\\end{center}", "\\begin{samepage}", "\\end{samepage}",
+    "\\newblock", "\\markboth", "\\markright", "\\newbibliography",
     "\\;", "\\,", "\\!", "\\:", "\\appendix", "\\geometry", "\\parindent", "\\parskip",
     "\\hyphenpenalty", "\\tolerance", "\\emergencystretch", "\\exhyphenpenalty", "\\binoppenalty",
     "\\relpenalty", "\\clubpenalty", "\\widowpenalty", "\\baselineskip", "\\textheight",
@@ -205,7 +207,7 @@ def run(ctx: Context) -> None:
         "section_level": 2 if re.search(r"(?<!\\)\\chapter\b", ctx.tex) else 1,
         "mathimg": {"mode": "collect", "out": str(failed_path)},
     }
-    bibs = bib_files(ctx)
+    bibs = [] if is_bibtex(ctx) else bib_files(ctx)  # BibTeX lists come from the .bbl
     if bibs:
         ctx.report.info(STAGE, "bibliography.citeproc", str(len(bibs)))
     if ctx.config.math_fallback != "image":

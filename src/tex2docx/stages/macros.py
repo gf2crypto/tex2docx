@@ -21,6 +21,7 @@ Status: implemented (M2).
 from __future__ import annotations
 
 import re
+from importlib import resources
 from pathlib import Path
 
 from ..context import Context
@@ -142,10 +143,29 @@ def inject_definitions(text: str, packages: dict[str, Path], ctx: Context) -> st
     return _LOAD.sub(repl, text)
 
 
+_PKG_MACROS = Path(str(resources.files("tex2docx").joinpath("data", "package-macros")))
+
+
+def inject_package_macros(text: str, ctx: Context) -> str:
+    """data/package-macros/<pkg>.tex after \\usepackage{<pkg>}: math notation of distribution
+    packages (cryptocode's \\xor, ...) that pandoc never sees."""
+    def repl(m: re.Match[str]) -> str:
+        extra = ""
+        for name in m.group(2).split(","):
+            f = _PKG_MACROS / (name.strip() + ".tex")
+            if f.is_file():
+                extra += f.read_text(encoding="utf-8").replace("\n", " ")
+                ctx.report.info(STAGE, "macros.package", name.strip())
+        return m.group(0) + extra
+
+    return _LOAD.sub(repl, text)
+
+
 def run(ctx: Context) -> None:
     packages = personal_packages(ctx)
     if packages:
         ctx.tex = inject_definitions(ctx.tex, packages, ctx)
+    ctx.tex = inject_package_macros(ctx.tex, ctx)
 
     overrides = ctx.config.macros
     if not overrides:

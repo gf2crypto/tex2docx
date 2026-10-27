@@ -21,6 +21,12 @@ function Pandoc(doc)
         div.attributes['custom-style'] = align
         return div
       end
+      if div.classes[1] == 't2dkeywords' then  -- IEEEkeywords: "Ключевые слова — ..."
+        local inl = pandoc.List({ pandoc.Strong({ pandoc.Str(((M.names or {}).keywords or 'Keywords') .. ' —') }), pandoc.Space() })
+        local first = div.content[1]
+        if first and (first.t == 'Para' or first.t == 'Plain') then inl:extend(first.content) end
+        return pandoc.Para(inl)
+      end
       if div.classes[1] ~= 't2dabstract' then return nil end
       local out = { pandoc.Div({ pandoc.Para({ pandoc.Str(abstract_title) }) },
                                pandoc.Attr('', {}, { ['custom-style'] = 'Abstract Title' })) }

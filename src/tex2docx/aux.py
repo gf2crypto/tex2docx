@@ -70,7 +70,11 @@ def parse_aux(path: Path) -> dict[str, Label]:
 
 
 def parse_aux_bibcites(path: Path) -> dict[str, str]:
+    """\\bibcite from the main .aux, its \\@input files and the other .aux files of the
+    run (multibbl writes one per bibliography)."""
     out: dict[str, str] = {}
-    for f in _aux_files(path):
+    files = _aux_files(path)
+    files += [p for p in sorted(path.parent.glob("*.aux")) if p not in files]
+    for f in files:
         out.update(parse_bibcites(f.read_text(encoding="utf-8", errors="replace")))
     return out

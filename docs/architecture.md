@@ -56,6 +56,9 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 `bibliography.lua` ставит на месте маркера заголовок и `Div#refs`, а при `thebibliography` печатает
 цитаты номерами из `\bibcite` (`ctx.bibcites`, из `.aux`). ADR 0005.
 
+Для BibTeX-документов списки берутся из `.bbl` (`normalize.inline_bibtex_lists`), citeproc не нужен;
+latexmk сам запускает bibtex (cwd — каталог статьи, вывод в workdir; `./` в путях библиографии снимается).
+
 ## Формулы-картинки
 
 Первый проход pandoc: `mathimg.lua` проверяет каждую формулу (`pandoc.write` в MathML; нет `<math>` —

@@ -20,6 +20,11 @@
    «Список литературы» по языку babel. Стиль заменяется ключом `csl:` в конфиге.
 2. `thebibliography` → `enumerate` с `\item` вместо `\bibitem`, заголовок по языку;
    номера цитат берутся из `\bibcite{key}{n}` в `.aux` (ровно как в PDF).
+3. Дополнение (2026-10-27, третья статья): BibTeX (`\bibliographystyle` + `\bibliography`, в т.ч.
+   `multibbl` с несколькими списками) — не citeproc, а готовые `thebibliography` из `.bbl`, которые
+   LaTeX уже отформатировал по `.bst` (gost2008 и др.): это ровно как в PDF и сохраняет несколько
+   списков с их нумерацией. Служебные макросы `.bst` (`\BibEmph`, `\BibDash`, `\selectlanguageifdefined`)
+   переписываются. citeproc остается для biblatex, у которого `.bbl` — не список.
 
 ## Альтернативы
 
