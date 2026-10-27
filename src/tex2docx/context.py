@@ -41,6 +41,9 @@ class Context:
     latex_tex: str = ""
     tex: str = ""
 
+    # Personal packages/classes (outside the TeX distribution and the source dir),
+    # name -> path; filled once by texmf.personal_packages(). None = not resolved yet.
+    packages: dict[str, Path] | None = None
     labels: dict[str, Label] = field(default_factory=dict)  # from .aux
     theorems: dict[str, TheoremDecl] = field(default_factory=dict)
     figures: list[Path] = field(default_factory=list)  # rendered images, source order

@@ -56,6 +56,24 @@ def latexmk(tex_file: Path, engine: str, *, search_dirs: list[Path],
     return run(cmd, cwd=tex_file.parent, env=tex_env(*search_dirs), timeout=timeout)
 
 
+def kpsewhich(names: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> dict[str, Path]:
+    """Resolve file names (with extension) the way TeX does. Missing names are absent."""
+    if not names:
+        return {}
+    proc = run([require("kpsewhich"), *names], cwd=cwd, env=env, timeout=60)
+    found: dict[str, Path] = {}
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if line:
+            found[Path(line).name] = (cwd / line).resolve()
+    return found
+
+
+def texmf_var(name: str, *, cwd: Path, env: dict[str, str] | None = None) -> str:
+    proc = run([require("kpsewhich"), "-var-value", name], cwd=cwd, env=env, timeout=60)
+    return proc.stdout.strip()
+
+
 def log_errors(log_file: Path, limit: int = 20) -> list[str]:
     """Error headers ('! ...' or 'file:line: ...') from a TeX log, without context lines."""
     if not log_file.exists():

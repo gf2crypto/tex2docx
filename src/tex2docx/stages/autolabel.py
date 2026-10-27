@@ -28,6 +28,7 @@ from __future__ import annotations
 import re
 
 from ..context import Context
+from ..texmf import personal_packages
 from ..texscan import read_group, read_optional
 from .theorems import collect_decls
 
@@ -172,7 +173,7 @@ def run(ctx: Context) -> None:
     if ctx.latex_tex != ctx.tex:
         ctx.report.error(STAGE, "autolabel.views-differ")
         return
-    decls = collect_decls(ctx.source_dir, ctx.tex)
+    decls = collect_decls(ctx.source_dir, ctx.tex, list(personal_packages(ctx).values()))
     numbered = {env for env, d in decls.items() if d.numbered}
     text, n = insert_labels(ctx.tex, numbered)
     if n:

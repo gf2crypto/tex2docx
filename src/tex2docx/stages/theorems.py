@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 from ..context import Context, TheoremDecl
+from ..texmf import personal_packages
 from ..texscan import read_group, read_optional, skip_ws
 
 STAGE = "theorems"
@@ -43,11 +44,14 @@ def scan_decls(text: str, style: str = "plain") -> tuple[dict[str, TheoremDecl],
     return decls, style
 
 
-def collect_decls(source_dir: Path, tex: str) -> dict[str, TheoremDecl]:
-    """Declarations from local .sty/.cls next to the main file, then from the document."""
+def collect_decls(source_dir: Path, tex: str,
+                  extra: list[Path] | None = None) -> dict[str, TheoremDecl]:
+    """Declarations from personal packages, local .sty/.cls next to the main file,
+    then from the document."""
     decls: dict[str, TheoremDecl] = {}
     style = "plain"
-    for f in sorted(source_dir.glob("*.sty")) + sorted(source_dir.glob("*.cls")):
+    files = list(extra or []) + sorted(source_dir.glob("*.sty")) + sorted(source_dir.glob("*.cls"))
+    for f in files:
         found, style = scan_decls(f.read_text(encoding="utf-8", errors="replace"), style)
         decls.update(found)
     found, _ = scan_decls(tex, style)
@@ -56,6 +60,6 @@ def collect_decls(source_dir: Path, tex: str) -> dict[str, TheoremDecl]:
 
 
 def run(ctx: Context) -> None:
-    ctx.theorems.update(collect_decls(ctx.source_dir, ctx.tex))
+    ctx.theorems.update(collect_decls(ctx.source_dir, ctx.tex, list(personal_packages(ctx).values())))
     if not ctx.theorems and "\\begin{proof}" in ctx.tex:
         ctx.report.warn(STAGE, "theorems.none-declared", "proof used, no \\newtheorem found")

@@ -12,9 +12,11 @@ from tex2docx.report import Report
 from tex2docx.stages.autolabel import insert_labels
 from tex2docx.stages.flatten import flatten_text
 from tex2docx.stages.normalize import normalize_text
+from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
 from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls
+from tex2docx.texmf import package_requests
 from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
 
 # --- texscan -----------------------------------------------------------------
@@ -138,6 +140,43 @@ def test_postprocess_qed_and_keep_next():
     texts = [t.text for t in proof.iter(f"{{{W}}}t")]
     assert texts == ["Proof.", "done.", "\u25fb"]
     assert proof.findall(f"{{{W}}}r/{{{W}}}tab")
+
+
+# --- macros from personal packages -------------------------------------------
+
+def test_extract_definitions():
+    sty = r"""
+\newcommand{\matr}[1]{\mathbf{#1}}
+\newcommand\vect[1]{\boldsymbol{#1}}
+\providecommand{\norm}[2][2]{\lVert #2 \rVert_{#1}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\def\eps{\varepsilon}
+\def\pair#1#2{\langle #1, #2 \rangle}
+\newcommand{\@secret}{x}
+\newcommand{\usesecret}{\@secret}
+\theoremstyle{plain}
+\newtheorem{claim}{Claim}[section]
+\newtheorem*{note}{Note}
+"""
+    defs, skipped = extract_definitions(sty)
+    assert defs == [
+        r"\newcommand{\matr}[1]{\mathbf{#1}}",
+        r"\newcommand{\vect}[1]{\boldsymbol{#1}}",
+        r"\providecommand{\norm}[2][2]{\lVert #2 \rVert_{#1}}",
+        r"\DeclareMathOperator*{\argmin}{arg\,min}",
+        r"\newcommand{\eps}{\varepsilon}",
+        r"\theoremstyle{plain}",
+        r"\newtheorem{claim}{Claim}[section]",
+        r"\newtheorem*{note}{Note}",
+    ]
+    assert skipped == [r"\pair", r"\@secret", r"\usesecret"]
+
+
+def test_package_requests():
+    src = r"\documentclass[12pt]{amsart}\usepackage[utf8]{inputenc}\usepackage{a, b}\RequirePackage{c}"
+    assert package_requests(src) == [("amsart.cls", "documentclass"), ("inputenc.sty", "usepackage"),
+                                     ("a.sty", "usepackage"), ("b.sty", "usepackage"),
+                                     ("c.sty", "RequirePackage")]
 
 
 # --- pandoc message collection ----------------------------------------------

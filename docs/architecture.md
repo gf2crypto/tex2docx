@@ -18,7 +18,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 | latex | `stages/latex_compile.py` | latexmk → `.aux` → `ctx.labels` | готов |
 | theorems | `stages/theorems.py` | `\newtheorem`, `\theoremstyle` → `ctx.theorems` | готов (amsthm) |
 | normalize | `stages/normalize.py` | бабелевские сокращения в `ctx.tex` | готов |
-| macros | `stages/macros.py` | ручные переопределения из конфига | частично |
+| macros | `stages/macros.py` | определения из личных пакетов (`texmf.py`, kpsewhich) + конфиг | готов |
 | figures | `stages/figures.py` | `preview` → PNG → `\includegraphics` | готов |
 | pandoc | `stages/pandoc_run.py` | pandoc + фильтры, сбор сообщений | готов |
 | postprocess | `stages/postprocess.py` | типографика, keep-with-next, знак конца доказательства, вид ссылок | частично (M3) |
@@ -60,6 +60,14 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 - `StageError(code, detail)` — ожидаемая неудача этапа. Если этап `fatal`, конвейер останавливается.
 - Любое другое исключение — баг: записывается как `internal-error` с файлом и строкой, без текста.
 - Отчет пишется всегда, даже если docx не получился.
+
+## Личные пакеты
+
+`texmf.py` спрашивает `kpsewhich`, где лежит каждый `\usepackage`/`\documentclass`/`\RequirePackage`;
+файлы не из дистрибутива (`TEXMFDIST`, `TEXMFMAIN`) и не из каталога исходника считаются личными.
+Их `\newcommand`, `\DeclareMathOperator`, простые `\def`, `\theoremstyle`, `\newtheorem` этап `macros`
+вставляет в `ctx.tex` сразу после команды загрузки; `theorems` и `autolabel` читают из них объявления теорем.
+В тестах папка `texmf/` кейса подставляется в `TEXMFHOME`.
 
 ## Зачем запускать pandoc из каталога исходника
 

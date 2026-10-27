@@ -1,0 +1,27 @@
+% Синтетический кейс: макросы и теоремы из личного texmf (папка texmf/ этого кейса
+% подставляется тестом в TEXMFHOME). Реальных статей в корпусе нет.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amssymb}
+\usepackage{mymath}
+
+\begin{document}
+
+\section{Макросы}
+
+Матрица $\matr{G}$, вектор $\vec{x}$, норма $\norm{\vect{y}}$ и $\norm[1]{\vect{y}}$,
+вес $\wt(\vect{x})$, скалярное произведение $\inner{\vect{x}}{\vect{y}}$,
+число $\eps > 0$ и
+\begin{equation}
+  \vect{z} = \argmin_{\vect{x}} \norm{\matr{G}\vect{x}}.
+\end{equation}
+
+\begin{claim}\label{cl:one}
+Утверждение из личного пакета.
+\end{claim}
+
+По утверждению~\ref{cl:one} все верно.
+
+\end{document}

@@ -8,6 +8,7 @@ pytest reports XPASS - move it to the strict list.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -27,11 +28,28 @@ needs_tools = pytest.mark.skipif(
 )
 
 
+def convert_case(case: str, out: Path) -> None:
+    """Convert a corpus case. A texmf/ folder in the case plays the user's personal
+    texmf tree: it is prepended to TEXMFHOME for the duration of the conversion."""
+    texmf = CORPUS / case / "texmf"
+    saved = os.environ.get("TEXMFHOME")
+    if texmf.is_dir():
+        os.environ["TEXMFHOME"] = "{" + str(texmf) + ("," + saved if saved else "") + "}"
+    try:
+        convert(CORPUS / case / "main.tex", out)
+    finally:
+        if texmf.is_dir():
+            if saved is None:
+                del os.environ["TEXMFHOME"]
+            else:
+                os.environ["TEXMFHOME"] = saved
+
+
 @pytest.fixture(scope="module", params=CASES)
 def converted(request, tmp_path_factory):
     case = request.param
     out = tmp_path_factory.mktemp(case) / f"{case}.docx"
-    convert(CORPUS / case / "main.tex", out)
+    convert_case(case, out)
     expect = yaml.safe_load((CORPUS / case / "expect.yaml").read_text(encoding="utf-8")) or {}
     report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
     probe = DocxProbe.open(out) if out.exists() else None
@@ -71,7 +89,7 @@ def _xfail_items():
 @pytest.mark.parametrize("case,kind,item", list(_xfail_items()))
 def test_planned(case, kind, item, tmp_path):
     out = tmp_path / f"{case}.docx"
-    convert(CORPUS / case / "main.tex", out)
+    convert_case(case, out)
     if kind == "contains":
         assert item in DocxProbe.open(out).text
     else:

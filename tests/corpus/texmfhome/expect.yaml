@@ -1,0 +1,19 @@
+# Макросы и \newtheorem из личного texmf (stages/macros.py, texmf.py).
+contains:
+  - "Утверждение 1.1."
+  - "По утверждению 1.1 все верно."
+  - "\t(1)"
+not_contains:
+  - "\\matr"
+  - "\\vect"
+  - "\\norm"
+  - "\\eps"
+math_min: 8
+styles: [Theorem, Equation]
+report_absent:
+  - pandoc.math-as-text
+  - pandoc.skipped
+  - crossref.unresolved
+  - theorem.unlabeled
+  - internal-error
+# \def\pair#1#2 и \@secret-зависимые макросы честно пропускаются: macros.skipped ожидается
