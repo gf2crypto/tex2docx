@@ -1,0 +1,18 @@
+% Синтетический кейс: ручной список thebibliography, номера цитат из \bibcite в .aux.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\begin{document}
+
+\section{Цитаты}
+
+См.~\cite{knuth} и~\cite{knuth,lamport}, а также~\cite[гл.~2]{lamport}.
+
+\begin{thebibliography}{9}
+\bibitem{knuth} Кнут~Д. Искусство программирования. М.: Вильямс, 2000.
+\bibitem{lamport} Lamport~L. Time, clocks, and the ordering of events // Comm. ACM. 1978.
+\end{thebibliography}
+
+\end{document}

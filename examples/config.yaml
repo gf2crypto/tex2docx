@@ -30,6 +30,9 @@ macros:
 figure_envs: [tikzpicture, algorithm, algorithmic]
 figure_dpi: 300
 
+# Стиль библиографии (CSL) для .bib; без ключа — вшитый ГОСТ Р 7.0.5-2008 (numeric).
+# csl: my-journal.csl
+
 # Формула, которую pandoc не смог перевести в формулу Word:
 # image — картинка, набранная LaTeX с преамбулой документа; text — сырой TeX, как у pandoc.
 math_fallback: image

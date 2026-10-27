@@ -36,6 +36,8 @@ class Config:
     # Environments rendered as pictures via the preview package.
     figure_envs: list[str] = field(default_factory=lambda: ["tikzpicture", "algorithm", "algorithmic"])
     figure_dpi: int = 300
+    # CSL style for the .bib bibliography; None = bundled GOST R 7.0.5-2008 numeric (ADR 0005).
+    csl: Path | None = None
     # Formula texmath cannot convert: "image" (rendered by LaTeX, see stages/mathimg.py)
     # or "text" (left as raw TeX, as pandoc does).
     math_fallback: str = "image"
@@ -57,7 +59,8 @@ class Config:
         unknown = set(data) - known
         if unknown:
             raise ValueError(f"unknown config keys in {path}: {sorted(unknown)}")
-        if data.get("reference_docx"):
-            ref = Path(data["reference_docx"])
-            data["reference_docx"] = ref if ref.is_absolute() else Path(path).parent / ref
+        for key in ("reference_docx", "csl"):
+            if data.get(key):
+                ref = Path(data[key])
+                data[key] = ref if ref.is_absolute() else Path(path).parent / ref
         return cls(**data)

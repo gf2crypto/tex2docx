@@ -47,6 +47,14 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `equations` → `mathimg`.
 `equations` последним, потому что он разрезает абзацы, а `theorems` ищет заголовок в первом абзаце `Div`.
 
+## Библиография
+
+`bibliography.py` находит `.bib` по `\addbibresource`/`\bibliography` в `ctx.latex_tex`; при наличии pandoc
+запускается с `--citeproc`, `.bib` и CSL из `data/csl/` (после Lua-фильтров). `normalize` заменяет
+`\printbibliography`/`\bibliography{}` на маркер `\label{t2d:refs}`, а `thebibliography` — на `enumerate`;
+`bibliography.lua` ставит на месте маркера заголовок и `Div#refs`, а при `thebibliography` печатает
+цитаты номерами из `\bibcite` (`ctx.bibcites`, из `.aux`). ADR 0005.
+
 ## Формулы-картинки
 
 Первый проход pandoc: `mathimg.lua` проверяет каждую формулу (`pandoc.write` в MathML; нет `<math>` —

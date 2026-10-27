@@ -46,7 +46,8 @@
       (абзац перед формулой, рисунок перед подписью, подпись перед таблицей), знак конца
       доказательства по правому краю, ссылки без синего стиля Hyperlink.
 - [ ] Живые номера: поля SEQ + закладки, ссылки как поля REF (переключатель в конфиге).
-- [ ] Библиография: biblatex/`.bib` → citeproc + CSL ГОСТ Р 7.0.5; `thebibliography` → нумерованный список.
+- [x] Библиография: `.bib` (biblatex/BibTeX) → citeproc + CSL ГОСТ Р 7.0.5 (ADR 0005);
+      `thebibliography` → нумерованный список, номера цитат из `\bibcite`; кейсы `bibliography`, `thebib`.
 - [ ] Шаблоны под журналы: `examples/<journal>.yaml` + свой `reference.docx`.
 - [x] Алгоритмы: картинкой через `preview` (`algorithm`/`algorithmic` в `figure_envs` по умолчанию).
 

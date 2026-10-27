@@ -98,6 +98,12 @@
   если texmath не перевел формулу (и пишет warning в stderr). Работает в 3.1.3 и 3.12.1;
   на этом держится `mathimg.lua`.
 
+## Библиография
+
+- `\cite` → `Cite` (без citeproc в docx выводится пусто), `\nocite{*}` pandoc понимает, `\bibliography{x}` кладет
+  `x.bib` в метаданные, `\printbibliography` пропускает. `thebibliography` → `Div` с текстом без `\bibitem`
+  (ключи потеряны). `[WARNING] Citeproc: citation <key> not found` — неизвестный ключ.
+
 ## Сообщения
 
 - С `--verbose` пропущенные команды выводятся как

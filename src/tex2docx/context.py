@@ -49,6 +49,7 @@ class Context:
     # name -> path; filled once by texmf.personal_packages(). None = not resolved yet.
     packages: dict[str, Path] | None = None
     labels: dict[str, Label] = field(default_factory=dict)  # from .aux
+    bibcites: dict[str, str] = field(default_factory=dict)  # \bibcite key -> number (thebibliography)
     theorems: dict[str, TheoremDecl] = field(default_factory=dict)
     figures: list[Path] = field(default_factory=list)  # rendered images, source order
     docx: Path | None = None  # pandoc output before postprocessing

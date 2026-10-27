@@ -1,0 +1,13 @@
+contains:
+  - "Первая ссылка [1], затем две сразу [1, 2] и ссылка со страницей [1, с. 5]."
+  - "Список литературы"
+  - "Кнут Д. Искусство программирования. Москва: Вильямс, 2000."
+  - "Lamport L. Time, clocks, and the ordering of events in a distributed system"
+  - "Иванов И. И. Неупомянутая работа. 2010."   # \nocite{*}
+not_contains:
+  - "[@"
+  - "knuth2000"
+report_absent:
+  - bibliography.missing-bib
+  - bibliography.unknown-key
+  - internal-error

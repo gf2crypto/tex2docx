@@ -9,6 +9,7 @@ from .context import Label
 from .texscan import read_group, strip_tex
 
 _NEWLABEL = re.compile(r"\\newlabel\{")
+_BIBCITE = re.compile(r"\\bibcite\{([^{}]+)\}\{")
 _INPUT = re.compile(r"\\@input\{([^}]+)\}")
 
 
@@ -38,12 +39,38 @@ def parse_aux_text(text: str) -> dict[str, Label]:
     return labels
 
 
+def parse_bibcites(text: str) -> dict[str, str]:
+    """\\bibcite{key}{label} (thebibliography / BibTeX): key -> number as printed."""
+    out: dict[str, str] = {}
+    for m in _BIBCITE.finditer(text):
+        try:
+            label, _ = read_group(text, m.end() - 1)
+        except ValueError:
+            continue
+        out[m.group(1)] = strip_tex(label)
+    return out
+
+
+def _aux_files(path: Path) -> list[Path]:
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    files = [path]
+    for sub in _INPUT.findall(text):
+        files += _aux_files(path.parent / sub)
+    return files
+
+
 def parse_aux(path: Path) -> dict[str, Label]:
     """Parse an .aux file and the files it pulls in via \\@input (\\include)."""
-    if not path.is_file():
-        return {}
-    text = path.read_text(encoding="utf-8", errors="replace")
-    labels = parse_aux_text(text)
-    for sub in _INPUT.findall(text):
-        labels.update(parse_aux(path.parent / sub))
+    labels: dict[str, Label] = {}
+    for f in _aux_files(path):
+        labels.update(parse_aux_text(f.read_text(encoding="utf-8", errors="replace")))
     return labels
+
+
+def parse_aux_bibcites(path: Path) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for f in _aux_files(path):
+        out.update(parse_bibcites(f.read_text(encoding="utf-8", errors="replace")))
+    return out

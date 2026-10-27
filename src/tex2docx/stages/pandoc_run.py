@@ -16,6 +16,7 @@ from dataclasses import asdict
 from importlib import resources
 from pathlib import Path
 
+from ..bibliography import BIB_TITLES, bib_files
 from ..context import Context
 from ..texmf import personal_packages
 from ..texscan import babel_languages
@@ -24,8 +25,8 @@ from ..tools import run as run_tool
 from . import StageError, mathimg
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "lists.lua", "equations.lua",
-           "mathimg.lua"]  # order matters
+FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "bibliography.lua", "lists.lua",
+           "equations.lua", "mathimg.lua"]  # order matters; --citeproc runs after them
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
@@ -66,13 +67,16 @@ def caption_names(ctx: Context) -> dict[str, str]:
     langs = babel_languages(ctx.tex)
     fig, tab, sep = CAPTION_NAMES.get(langs[-1] if langs else "english", CAPTION_NAMES["english"])
     c = ctx.config
+    lang = langs[-1] if langs else "english"
     return {"figure": c.figure_name or fig, "table": c.table_name or tab,
-            "sep": c.caption_sep if c.caption_sep is not None else sep}
+            "sep": c.caption_sep if c.caption_sep is not None else sep,
+            "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"])}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
 _MATH_FAIL = re.compile(r"^\[WARNING\] Could not convert TeX math")
 _UNEXPECTED = re.compile(r"unexpected control sequence (\\[A-Za-z@]+)")
 _T2D = re.compile(r"^\[t2d\] (info|warning|error) (\S+) ?(.*)$")
+_CITEPROC = re.compile(r"\[WARNING\] Citeproc: citation (\S+) not found")
 
 # Skipped by pandoc but irrelevant for the output (handled elsewhere or cosmetic).
 HARMLESS_SKIPS = {
@@ -130,9 +134,11 @@ def collect_pandoc_messages(stderr: str, input_name: str, ctx: Context) -> None:
             ctx.report.warn(STAGE, "pandoc.math-as-text", culprit)
         elif m := _T2D.match(line.strip()):
             ctx.report.add(m.group(1), "filter", m.group(2), m.group(3))
+        elif m := _CITEPROC.search(line):
+            ctx.report.warn(STAGE, "bibliography.unknown-key", m.group(1))
 
 
-def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path):
+def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path, bibs: list[Path]):
     pandoc = require("pandoc")
     ref = ctx.config.reference_docx or _pkg_path("data", "reference.docx")
     # cwd = source dir: pandoc reads \usepackage'd .sty files relative to cwd
@@ -146,6 +152,11 @@ def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path):
     ]
     for f in FILTERS:
         cmd += ["--lua-filter", str(_pkg_path("filters", f))]
+    if bibs:  # ADR 0005: .bib -> citeproc with the GOST style, offline
+        csl = ctx.config.csl or _pkg_path("data", "csl", "gost-r-7-0-5-2008-numeric.csl")
+        cmd += ["--citeproc", "--csl", str(csl), "-M", "link-citations=false"]
+        for b in bibs:
+            cmd += ["--bibliography", str(b)]
     try:
         return run_tool(cmd, cwd=ctx.source_dir)
     except ToolError as e:
@@ -165,20 +176,24 @@ def run(ctx: Context) -> None:
         "proof_name": ctx.config.proof_name,
         "styles": ctx.config.theorem_styles,
         "names": caption_names(ctx),
+        "bibcites": ctx.bibcites,
         "mathimg": {"mode": "collect", "out": str(failed_path)},
     }
+    bibs = bib_files(ctx)
+    if bibs:
+        ctx.report.info(STAGE, "bibliography.citeproc", str(len(bibs)))
     if ctx.config.math_fallback != "image":
         data["mathimg"] = None
     meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     out = ctx.workdir / "pandoc.docx"
-    proc = _pandoc(ctx, inp, meta, out)
+    proc = _pandoc(ctx, inp, meta, out, bibs)
 
     # Second pass only when some formula could not be converted and LaTeX rendered it.
     images = mathimg.render(ctx, mathimg.load_failed(failed_path)) if data["mathimg"] else {}
     if images:
         data["mathimg"] = {"mode": "replace", "images": images}
         meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        proc = _pandoc(ctx, inp, meta, out)
+        proc = _pandoc(ctx, inp, meta, out, bibs)
         ctx.report.warn(STAGE, "pandoc.math-as-image", str(len(images)))
 
     collect_pandoc_messages(proc.stderr, inp.name, ctx)

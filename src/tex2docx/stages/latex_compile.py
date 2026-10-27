@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from ..aux import parse_aux
+from ..aux import parse_aux, parse_aux_bibcites
 from ..context import Context
 from ..tools import ToolError, latexmk, log_errors
 
@@ -41,5 +41,6 @@ def run(ctx: Context) -> None:
             msg, line = located(err, ctx)
             ctx.report.warn(STAGE, "latex.log", msg, line=line)
     ctx.labels = parse_aux(d / "main.aux")
+    ctx.bibcites = parse_aux_bibcites(d / "main.aux")
     if not ctx.labels:
         ctx.report.warn(STAGE, "latex.no-labels", "numbering falls back to pandoc")

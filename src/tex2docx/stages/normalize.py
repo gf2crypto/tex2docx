@@ -7,6 +7,8 @@ formula text and does not know flalign at all); numbering is the same.
 \\cref/\\Cref become \\ref{cref:...} for crossref.lua (pandoc would lose the distinction).
 Theorem declarations of thmtools and ntheorem are rewritten into plain amsthm
 (stages/theorems.theorems_to_amsthm): pandoc knows only amsthm.
+Bibliography commands become the marker \\label{t2d:refs}, thebibliography an
+enumerate (ADR 0005).
 The subequations wrapper is removed (pandoc folds it into one formula): the
 inner environments keep their labels and LaTeX has already numbered them 2.3a,
 2.3b; references to the wrapper's own label resolve through the .aux anyway.
@@ -44,6 +46,17 @@ MATH_ENVS: list[tuple[str, str]] = [
     (r"(?<!\\)\\end\{subequations\}", ""),
 ]
 
+# Bibliography (ADR 0005): the place of the list becomes a marker label that
+# bibliography.lua turns into a heading + Div#refs; thebibliography becomes enumerate.
+BIBLIOGRAPHY: list[tuple[str, str]] = [
+    (r"(?<!\\)\\printbibliography\*?(?:\s*\[[^\]]*\])?", r"\\label{t2d:refs}"),
+    (r"(?<!\\)\\bibliography\s*\{[^{}]*\}", r"\\label{t2d:refs}"),
+    (r"(?<!\\)\\bibliographystyle\s*\{[^{}]*\}", ""),
+    (r"(?<!\\)\\begin\s*\{thebibliography\}\s*\{[^{}]*\}", r"\\label{t2d:refs}\\begin{enumerate}"),
+    (r"(?<!\\)\\end\s*\{thebibliography\}", r"\\end{enumerate}"),
+    (r"(?<!\\)\\bibitem\s*(?:\[[^\]]*\])?\s*\{[^{}]*\}", r"\\item"),
+]
+
 # cleveref: pandoc turns \cref into a plain \ref and drops \Cref; mark them so that
 # crossref.lua can build "теорема 1.1" from the type recorded in the .aux.
 CREF: list[tuple[str, str]] = [
@@ -53,7 +66,7 @@ CREF: list[tuple[str, str]] = [
 
 
 def normalize_text(text: str) -> str:
-    for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF:
+    for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF + BIBLIOGRAPHY:
         text = re.sub(pat, rep, text)
     return theorems_to_amsthm(text)
 
