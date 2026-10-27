@@ -16,7 +16,7 @@ from dataclasses import asdict
 from importlib import resources
 from pathlib import Path
 
-from ..bibliography import BIB_TITLES, bib_files
+from ..bibliography import ABSTRACT_TITLES, BIB_TITLES, bib_files
 from ..context import Context
 from ..texmf import personal_packages
 from ..texscan import babel_languages
@@ -25,8 +25,8 @@ from ..tools import run as run_tool
 from . import StageError, mathimg
 
 STAGE = "pandoc"
-FILTERS = ["crossref.lua", "theorems.lua", "captions.lua", "headings.lua", "bibliography.lua",
-           "lists.lua", "equations.lua", "mathimg.lua", "numbers.lua"]  # order matters; --citeproc after
+FILTERS = ["oldmath.lua", "crossref.lua", "theorems.lua", "captions.lua", "headings.lua",
+           "bibliography.lua", "lists.lua", "equations.lua", "mathimg.lua", "numbers.lua"]  # order matters; --citeproc after
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
@@ -70,7 +70,8 @@ def caption_names(ctx: Context) -> dict[str, str]:
     lang = langs[-1] if langs else "english"
     return {"figure": c.figure_name or fig, "table": c.table_name or tab,
             "sep": c.caption_sep if c.caption_sep is not None else sep,
-            "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"])}
+            "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"]),
+            "abstract": ABSTRACT_TITLES.get(lang, ABSTRACT_TITLES["english"])}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
 _MATH_FAIL = re.compile(r"^\[WARNING\] Could not convert TeX math")
@@ -87,6 +88,12 @@ HARMLESS_SKIPS = {
     "\\theorembodyfont", "\\theoremheaderfont", "\\theoremsymbol", "\\theoremseparator",
     "\\theoremindent", "\\theorempreskip", "\\theorempostskip", "\\theoremnumbering",
     "\\theoremprework", "\\theorempostwork", "\\declaretheoremstyle", "\\qedsymbol",
+    "\\begin{t2dabstract}", "\\end{t2dabstract}", "\\begin{titlingpage}", "\\end{titlingpage}",
+    "\\begin{flushleft}", "\\end{flushleft}", "\\begin{flushright}", "\\end{flushright}",
+    "\\begin{center}", "\\end{center}", "\\begin{samepage}", "\\end{samepage}",
+    "\\;", "\\,", "\\!", "\\:", "\\appendix", "\\geometry", "\\parindent", "\\parskip",
+    "\\hyphenpenalty", "\\tolerance", "\\emergencystretch", "\\exhyphenpenalty", "\\binoppenalty",
+    "\\relpenalty", "\\clubpenalty", "\\widowpenalty", "\\baselineskip", "\\textheight",
     # page layout, spacing, fonts and colors: Word styles decide the look
     "\\setlength", "\\addtolength", "\\vspace", "\\vspace*", "\\hspace", "\\hspace*",
     "\\hfil", "\\hfill", "\\vfill", "\\linewidth", "\\textwidth", "\\pagestyle",
@@ -111,7 +118,7 @@ def _pkg_path(*parts: str) -> Path:
 
 
 def _skipped_command(snippet: str) -> str:
-    m = re.match(r"\\[A-Za-z@]+\*?|\\begin\{[^}]+\}", snippet)
+    m = re.match(r"\\(?:begin|end)\{[^}]+\}|\\[A-Za-z@]+\*?|\\.", snippet)
     return m.group(0) if m else snippet[:20]
 
 
@@ -138,11 +145,27 @@ def collect_pandoc_messages(stderr: str, input_name: str, ctx: Context) -> None:
             ctx.report.warn(STAGE, "bibliography.unknown-key", m.group(1))
 
 
+def _local_packages(ctx: Context) -> None:
+    """Copy the .sty/.cls lying next to the document into the workdir as UTF-8.
+
+    pandoc reads \\usepackage'd files relative to its cwd (not --resource-path) and
+    chokes on non-UTF-8 bytes (old Russian styles are cp866/cp1251), so it runs in
+    the workdir with clean copies."""
+    for f in sorted(ctx.source_dir.glob("*.sty")) + sorted(ctx.source_dir.glob("*.cls")):
+        raw = f.read_bytes()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("cp1251", errors="replace")  # comments only, usually
+        (ctx.workdir / f.name).write_text(text, encoding="utf-8")
+
+
 def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path, bibs: list[Path]):
     pandoc = require("pandoc")
     ref = ctx.config.reference_docx or _pkg_path("data", "reference.docx")
-    # cwd = source dir: pandoc reads \usepackage'd .sty files relative to cwd
-    # (not --resource-path), and that is how it sees local macro packages.
+    # cwd = workdir with copies of the local .sty files: pandoc reads \usepackage'd
+    # files relative to cwd (not --resource-path), and that is how it sees local
+    # macro packages; images are found through --resource-path.
     cmd = [
         pandoc, str(inp), "-f", "latex", "-t", "docx", "-o", str(out),
         "--reference-doc", str(ref),
@@ -158,7 +181,7 @@ def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path, bibs: list[Path]):
         for b in bibs:
             cmd += ["--bibliography", str(b)]
     try:
-        return run_tool(cmd, cwd=ctx.source_dir)
+        return run_tool(cmd, cwd=ctx.workdir)
     except ToolError as e:
         raise StageError("pandoc.tool", str(e)) from e
 
@@ -166,6 +189,7 @@ def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path, bibs: list[Path]):
 def run(ctx: Context) -> None:
     inp = ctx.workdir / "pandoc_input.tex"
     inp.write_text(ctx.tex, encoding="utf-8")
+    _local_packages(ctx)
     meta = ctx.workdir / "t2d-meta.json"
     failed_path = ctx.workdir / "mathfail.json"
     data = {

@@ -21,6 +21,7 @@ BIB_TITLES = {  # babel language -> heading, as \bibname / \refname of babel
     "ukrainian": "Список літератури",
     "english": "References",
 }
+ABSTRACT_TITLES = {"russian": "Аннотация", "ukrainian": "Анотація", "english": "Abstract"}
 
 
 def bib_files(ctx: Context) -> list[Path]:

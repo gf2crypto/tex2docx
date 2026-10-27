@@ -57,6 +57,12 @@ BIBLIOGRAPHY: list[tuple[str, str]] = [
     (r"(?<!\\)\\bibitem\s*(?:\[[^\]]*\])?\s*\{[^{}]*\}", r"\\item"),
 ]
 
+# abstract: pandoc moves it into metadata (printed first, titled "Abstract");
+# renamed so that it stays in place and gets the babel heading (lists.lua).
+ABSTRACT: list[tuple[str, str]] = [
+    (r"(?<!\\)\\(begin|end)\{abstract\}", r"\\\1{t2dabstract}"),
+]
+
 # cleveref: pandoc turns \cref into a plain \ref and drops \Cref; mark them so that
 # crossref.lua can build "теорема 1.1" from the type recorded in the .aux.
 CREF: list[tuple[str, str]] = [
@@ -66,7 +72,7 @@ CREF: list[tuple[str, str]] = [
 
 
 def normalize_text(text: str) -> str:
-    for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF + BIBLIOGRAPHY:
+    for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF + BIBLIOGRAPHY + ABSTRACT:
         text = re.sub(pat, rep, text)
     return theorems_to_amsthm(text)
 

@@ -1,0 +1,17 @@
+contains:
+  - "Аннотация в кодировке cp1251."
+  - "Abstract"                   # без babel LaTeX печатает Abstract — так и оставляем
+  - "Заголовок по центру"
+  - "Теорема 1."
+  - "Figure 1: Картинка"         # без babel — английская подпись, как в PDF
+math_min: 4
+images_min: 1
+styles: [Theorem, Centered, Abstract, AbstractTitle]
+report_where:
+  latex.log: "30"               # LaTeX тоже не находит pic.jpg — честно в отчете
+report_absent:
+  - pandoc.math-as-text
+  - pandoc.math-as-image         # \rm/\bf/\cal переписаны (oldmath.lua), формулы нативные
+  - figures.missing
+  - figures.unsupported-format
+  - internal-error

@@ -51,7 +51,7 @@ tex2docx paper.tex --workdir /tmp/wd   # оставить промежуточн
 ручная подмена макросов, окружения-рисунки.
 
 Свой шаблон стилей: скопируйте `src/tex2docx/data/reference.docx`, поменяйте стили в Word
-(имена стилей Theorem, Definition, Remark, Proof, Equation не трогайте) и укажите в `reference_docx`.
+(имена стилей Theorem, Definition, Remark, Proof, Equation, Centered, Right Aligned, Left Aligned не трогайте) и укажите в `reference_docx`.
 У стиля Equation два табулятора — центральный и правый; при другой ширине текста поправьте их.
 
 ## Разработка

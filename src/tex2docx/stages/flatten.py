@@ -4,6 +4,8 @@ Status: implemented (M0); M2: every line of the result remembers its origin
 (file, line) in ctx.line_map, so the report can point at the author's files.
 A macro whose body is made of \\input/\\include (\\newcommand*{\\Source}{...} of
 university templates) is expanded where it is used.
+Source encoding: \\usepackage[cp1251]{inputenc} (koi8-r, cp866, latin1, ...) is honoured
+for every file and rewritten to utf8, since both views are written in UTF-8.
 
 Invariant for later stages: whatever they do to ctx.tex / ctx.latex_tex must
 keep the number of lines, or the map (and pandoc's line numbers) go stale.
@@ -24,6 +26,29 @@ MAX_DEPTH = 20
 _INPUT = re.compile(r"(?<!\\)\\(input|include|subfile)\s*\{([^{}]+)\}")
 
 Origin = tuple[str, int]  # (path relative to the main file's dir, 1-based line)
+_INPUTENC = re.compile(rb"\\usepackage\s*\[\s*([A-Za-z0-9\-]+)\s*\]\s*\{inputenc\}")
+_INPUTENC_TEXT = re.compile(r"(\\usepackage\s*\[\s*)([A-Za-z0-9\-]+)(\s*\]\s*\{inputenc\})")
+ENCODINGS = {"utf8": "utf-8", "utf8x": "utf-8", "cp1251": "cp1251", "koi8-r": "koi8_r",
+             "koi8r": "koi8_r", "cp866": "cp866", "latin1": "latin-1", "latin2": "iso8859_2",
+             "cp1250": "cp1250", "ansinew": "cp1252", "applemac": "mac_roman", "maccyr": "mac_cyrillic"}
+
+
+def source_encoding(raw: bytes) -> str:
+    """Python codec name from the document's inputenc option (comments ignored); utf-8 by default."""
+    code = b"\n".join(re.sub(rb"(?<!\\)%.*", b"", ln) for ln in raw.split(b"\n"))
+    m = _INPUTENC.search(code)
+    if m:
+        return ENCODINGS.get(m.group(1).decode("ascii").lower(), "utf-8")
+    return "utf-8"
+
+
+def read_source(path: Path, encoding: str) -> str:
+    raw = path.read_bytes()
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raw, encoding = raw[3:], "utf-8"
+    text = raw.decode(encoding, errors="replace")
+    # both views are UTF-8 from here on: tell LaTeX so
+    return _INPUTENC_TEXT.sub(r"\g<1>utf8\3", text)
 # \newcommand*{\Source}{\include{a}\include{b}}: templates often gather the body in a macro
 _DEF = re.compile(r"(?<!\\)\\(?:re)?newcommand\*?\s*\{?\\([A-Za-z]+)\}?\s*(?=\{)")
 
@@ -58,7 +83,8 @@ def _resolve(name: str, base: Path) -> Path | None:
 
 
 def flatten_lines(text: str, base: Path, report: Report, origin_name: str,
-                  depth: int = 0, macros: dict[str, str] | None = None) -> tuple[list[str], list[Origin]]:
+                  depth: int = 0, macros: dict[str, str] | None = None,
+                  encoding: str = "utf-8") -> tuple[list[str], list[Origin]]:
     """Inline included files line by line. Returns (lines, origin of each line).
 
     An \\input in the middle of a line splits it: the text before stays on the
@@ -86,9 +112,9 @@ def flatten_lines(text: str, base: Path, report: Report, origin_name: str,
                 continue  # the command stays in the text; LaTeX will complain too
             out.append(line[pos:m.start()])
             origins.append((origin_name, n))
-            inner = path.read_text(encoding="utf-8", errors="replace")
+            inner = read_source(path, encoding)
             rel = str(path.relative_to(base)) if path.is_relative_to(base) else str(path)
-            sub, sub_orig = flatten_lines(inner, base, report, rel, depth + 1, macros)
+            sub, sub_orig = flatten_lines(inner, base, report, rel, depth + 1, macros, encoding)
             out.extend(sub)
             origins.extend(sub_orig)
             pos = m.end()
@@ -104,10 +130,14 @@ def flatten_text(text: str, base: Path, report: Report) -> str:
 def run(ctx: Context) -> None:
     if not ctx.source.is_file():
         raise StageError("flatten.no-source", str(ctx.source))
-    text = ctx.source.read_text(encoding="utf-8", errors="replace")
+    encoding = source_encoding(ctx.source.read_bytes())
+    text = read_source(ctx.source, encoding)
+    if encoding != "utf-8":
+        ctx.report.info(STAGE, "flatten.encoding", encoding)
     if "\\documentclass" not in text:
         raise StageError("flatten.not-a-document", "no \\documentclass in main file")
-    lines, origins = flatten_lines(text, ctx.source_dir, ctx.report, ctx.source.name)
+    lines, origins = flatten_lines(text, ctx.source_dir, ctx.report, ctx.source.name,
+                                   encoding=encoding)
     flat = "\n".join(lines)
     ctx.latex_tex = flat
     ctx.tex = flat

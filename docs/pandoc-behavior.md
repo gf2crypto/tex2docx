@@ -52,6 +52,16 @@
   подформул (1.9a, 1.9b) теряются. Поэтому `normalize` снимает обертку `subequations`,
   а внутренние окружения нумеруются своими метками (кейс `numbering`).
 
+## Кодировки и старый TeX
+
+- pandoc читает вход только как UTF-8 (`Cannot decode byte`), в т.ч. местные `.sty` из cwd; `flatten` перекодирует
+  документ по опции `inputenc`, `pandoc_run` дает pandoc UTF-8-копии местных `.sty` в workdir.
+- texmath не знает `\rm`, `\bf`, `\cal`, `\it` в формулах (`unexpected control sequence \rm`) — `oldmath.lua`
+  переписывает их в `\mathrm` и т.п.
+- `abstract` уходит в метаданные и печатается первым с заголовком «Abstract»; `normalize` переименовывает
+  окружение, `lists.lua` ставит его на место со стилями Abstract Title/Abstract.
+- `center`/`flushright`/`flushleft` → `Div` с классом, writer docx выравнивание игнорирует — стили Centered/Right Aligned.
+
 ## Списки
 
 - `description` → `DefinitionList` → в docx термин на отдельной строке стилем `Definition Term`,

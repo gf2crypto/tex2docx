@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -80,7 +81,8 @@ def log_errors(log_file: Path, limit: int = 20) -> list[str]:
         return []
     out = []
     for line in log_file.read_text(encoding="utf-8", errors="replace").splitlines():
-        if line.startswith("!") or ": LaTeX Error:" in line or ": Undefined control" in line:
+        if (line.startswith("!") or ": LaTeX Error:" in line or ": Undefined control" in line
+                or re.search(r": Package [\w.]+ Error:", line)):
             out.append(line.strip())
             if len(out) >= limit:
                 break

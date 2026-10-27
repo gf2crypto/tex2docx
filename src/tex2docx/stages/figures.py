@@ -33,6 +33,29 @@ _GRAPHICSPATH = re.compile(r"(?<!\\)\\graphicspath\s*\{((?:\s*\{[^{}]*\}\s*)+)\}
 _EXTENSIONS = re.compile(r"(?<!\\)\\DeclareGraphicsExtensions\s*\{([^{}]*)\}")
 _INCLUDE = re.compile(r"(?<!\\)\\includegraphics\s*(\[[^\]]*\])?\s*\{([^{}]+)\}")
 DEFAULT_EXTS = [".pdf", ".png", ".jpg", ".jpeg", ".eps", ".PNG", ".JPG"]
+# formats Word cannot show (or pandoc cannot embed): converted to PNG
+CONVERT_EXTS = {".bmp", ".tif", ".tiff", ".gif", ".webp"}
+FALLBACK_EXTS = DEFAULT_EXTS + sorted(CONVERT_EXTS) + [".BMP", ".TIF", ".TIFF", ".GIF"]
+
+
+def to_png(src: Path, dst: Path) -> bool:
+    """Convert a raster image to PNG with Pillow or ImageMagick, whichever is around."""
+    try:
+        from PIL import Image
+
+        Image.open(src).convert("RGB").save(dst)
+        return True
+    except ImportError:
+        pass
+    except Exception:  # noqa: BLE001 - a broken file: fall through to ImageMagick
+        pass
+    import shutil
+
+    tool = shutil.which("magick") or shutil.which("convert")
+    if tool is None:
+        return False
+    run_tool([tool, str(src), str(dst)], cwd=dst.parent)
+    return dst.is_file()
 
 
 def resolve_graphics(ctx: Context) -> None:
@@ -47,26 +70,45 @@ def resolve_graphics(ctx: Context) -> None:
     d = ctx.workdir / "figures"
     cache: dict[str, str] = {}
 
-    def find(name: str) -> Path | None:
+    def find(name: str) -> tuple[Path | None, bool]:
+        """(path, substituted): substituted when the file was found under another extension."""
         for base in paths:
             cand = ctx.source_dir / base / name
             if cand.is_file():
-                return cand
+                return cand, False
             if not cand.suffix or cand.suffix not in exts:
                 for e in exts:
                     if (p := Path(str(cand) + e)).is_file():
-                        return p
-        return None
+                        return p, False
+        # the named file is absent (LaTeX would fail too): same stem, another format
+        for base in paths:
+            stem = ctx.source_dir / base / name
+            stem = stem.with_suffix("") if stem.suffix in FALLBACK_EXTS else stem
+            for e in FALLBACK_EXTS:
+                if (p := Path(str(stem) + e)).is_file():
+                    return p, True
+        return None, False
 
     def repl(m: re.Match[str]) -> str:
         name = m.group(2).strip()
         if name.startswith("figures/"):
             return m.group(0)  # our own rendered picture
         if name not in cache:
-            path = find(name)
+            path, substituted = find(name)
+            if substituted:
+                ctx.report.warn(STAGE, "figures.substituted", f"{name} -> {path.name}")
             if path is None:
                 ctx.report.warn(STAGE, "figures.missing", name)
                 cache[name] = name
+            elif path.suffix.lower() in CONVERT_EXTS:
+                d.mkdir(exist_ok=True)
+                out = d / f"img-{len(cache)}.png"
+                if to_png(path, out):
+                    cache[name] = f"figures/{out.name}"
+                    ctx.report.info(STAGE, "figures.converted", path.name)
+                else:
+                    ctx.report.warn(STAGE, "figures.unsupported-format", path.name)
+                    cache[name] = name
             elif path.suffix.lower() in (".pdf", ".eps"):
                 d.mkdir(exist_ok=True)
                 out = d / f"img-{len(cache)}"

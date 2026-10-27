@@ -14,7 +14,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
-from docx.enum.text import WD_TAB_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.shared import Cm, Pt
 
 OUT = Path(__file__).resolve().parents[1] / "src" / "tex2docx" / "data" / "reference.docx"
@@ -69,6 +69,18 @@ def main() -> None:
         st.paragraph_format.space_before = Pt(before)
         st.paragraph_format.space_after = Pt(6)
         st.paragraph_format.keep_together = True
+
+    # center / flushright / flushleft environments (filters/lists.lua)
+    for name, align in (("Centered", WD_ALIGN_PARAGRAPH.CENTER),
+                        ("Right Aligned", WD_ALIGN_PARAGRAPH.RIGHT),
+                        ("Left Aligned", WD_ALIGN_PARAGRAPH.LEFT)):
+        try:
+            st = styles[name]
+        except KeyError:
+            st = styles.add_style(name, WD_STYLE_TYPE.PARAGRAPH)
+        st.base_style = base
+        st.paragraph_format.alignment = align
+        st.paragraph_format.first_line_indent = Cm(0)
 
     # Display equation: "<tab> formula <tab> (number)" - the formula sits on the
     # centre tab, the number on the right tab (ADR 0004).

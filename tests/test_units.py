@@ -10,7 +10,7 @@ from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
 from tex2docx.stages.autolabel import insert_labels
-from tex2docx.stages.flatten import flatten_lines, flatten_text
+from tex2docx.stages.flatten import flatten_lines, flatten_text, read_source, source_encoding
 from tex2docx.stages.normalize import normalize_text
 from tex2docx.stages.macros import extract_definitions
 from tex2docx.stages.pandoc_run import collect_pandoc_messages
@@ -126,6 +126,16 @@ def test_flatten_inputs_and_line_map(tmp_path: Path):
     r.line_map, r.main_file = origins, "main.tex"
     assert r.locate(2) == "sec/a.tex:1" and r.locate(6) == "1" and r.locate(99) == "99"
     assert flatten_text(src, tmp_path, Report()) == "\n".join(lines)
+
+
+def test_flatten_encoding(tmp_path: Path):
+    main = tmp_path / "m.tex"
+    main.write_bytes("%\\usepackage[utf8]{inputenc}\n\\usepackage[cp1251]{inputenc}\n\\input{a}\n".encode("cp1251"))
+    (tmp_path / "a.tex").write_bytes("Текст в cp1251".encode("cp1251"))
+    enc = source_encoding(main.read_bytes())
+    assert enc == "cp1251"
+    lines, _ = flatten_lines(read_source(main, enc), tmp_path, Report(), "m.tex", encoding=enc)
+    assert lines[1] == "\\usepackage[utf8]{inputenc}" and "Текст в cp1251" in lines
 
 
 def test_flatten_include_macro(tmp_path: Path):
@@ -247,6 +257,8 @@ def test_collect_pandoc_messages(tmp_path: Path):
         "[INFO] Skipped '\\foo{x}' at /w/pandoc_input.tex line 7 column 3",
         "[INFO] Skipped '\\maketitle' at /w/pandoc_input.tex line 9 column 1",
         "[INFO] Skipped '\\ProvidesPackage' at mine.sty line 2 column 1",
+        "[INFO] Skipped '\\begin{weird}' at /w/pandoc_input.tex line 8 column 1",
+        "[INFO] Skipped '\\begin{center}' at /w/pandoc_input.tex line 9 column 1",
         "[WARNING] Could not convert TeX math \\bar{secret} + y, rendering as TeX:",
         "  \\bar{secret}",
         "  unexpected control sequence \\bar",
@@ -256,6 +268,7 @@ def test_collect_pandoc_messages(tmp_path: Path):
     got = [(i.code, i.detail, i.line) for i in ctx.report.items]
     assert got == [
         ("pandoc.skipped", "\\foo", 7),
+        ("pandoc.skipped", "\\begin{weird}", 8),
         ("pandoc.math-as-text", "\\bar", None),
         ("crossref.unresolved", "eq:x", None),
     ]
