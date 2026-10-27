@@ -51,7 +51,7 @@ def run(ctx: Context) -> None:
         if not pdf.exists():
             ctx.report.error(STAGE, "figures.compile-failed")
             for err in log_errors(d / "figs.log"):
-                ctx.report.warn(STAGE, "latex.log", err)
+                ctx.report.warn(STAGE, "latex.log", err)  # lines are off by the preview preamble
             return
         if proc.returncode != 0:
             ctx.report.warn(STAGE, "figures.compile-errors")
