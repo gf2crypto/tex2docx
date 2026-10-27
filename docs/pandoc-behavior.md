@@ -44,6 +44,12 @@
   формула уходит в docx **сырым TeX-текстом** с `[WARNING] Could not convert TeX math`.
   То же для любой неизвестной команды (`unexpected control sequence \foo`).
 - Номера формул (`\numberwithin{equation}{section}`) pandoc не ставит, команду пропускает.
+- `gather` и `multline` → `gathered`; `eqnarray` → `aligned` (с `&=&` как есть);
+  `alignat{2}` → `aligned`, но `{2}` остается в тексте формулы; `flalign` pandoc не знает —
+  уходит текстом. Поэтому `normalize` переписывает `alignat`/`flalign` в `align`.
+- Тело plain-теоремы pandoc оборачивает в `Emph`, и выносная формула внутри теоремы
+  лежит в `Emph`, а не прямо в `Para`. Фильтр `equations` вытаскивает ее наружу.
+- `RawInline('openxml', '<w:r><w:tab/></w:r>')` writer docx вставляет как есть — так ставим табуляторы.
 
 ## Макросы и пакеты
 

@@ -15,16 +15,17 @@ contains:
   - "Формулы (2.1) и (2.2)"
   - "Гипотеза."
   - "линейный код с порождающей"
+  - "\t(1.1)"          # номер выносной формулы по правому табулятору (ADR 0004)
+  - "\t(2.1)"
+  - "\t(2.2)"
 not_contains:
   - "Proof."
   - "[eq:"
   - '"—'
   - "Гипотеза 1"
-xfail_contains:
-  - "\t(2.1)"        # M1: номер у выносной формулы (сейчас он есть только в ссылках)
 math_min: 10
 images_min: 1
-styles: [Theorem, Definition, Remark, Proof]
+styles: [Theorem, Definition, Remark, Proof, Equation]
 report_absent:
   - pandoc.math-as-text
   - crossref.unresolved

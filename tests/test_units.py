@@ -90,6 +90,12 @@ def test_babel_shorthands():
     assert normalize_text(r'\"o') == r'\"o'
 
 
+def test_normalize_math_envs():
+    assert normalize_text(r"\begin{alignat}{2} a \end{alignat}") == r"\begin{align} a \end{align}"
+    assert normalize_text(r"\begin{alignat*}{3}") == r"\begin{align*}"
+    assert normalize_text(r"\begin{flalign} \end{flalign}") == r"\begin{align} \end{align}"
+
+
 # --- pandoc message collection ----------------------------------------------
 
 def test_collect_pandoc_messages(tmp_path: Path):
