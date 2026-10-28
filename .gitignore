@@ -8,7 +8,7 @@ dist/
 
 # результаты прогонов
 *.docx
-!src/tex2docx/data/reference.docx
+!src/tex2docx/data/reference*.docx
 *.report.md
 *.report.json
 _t2d_work/

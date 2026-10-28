@@ -164,7 +164,8 @@ def _local_packages(ctx: Context) -> None:
 
 def _pandoc(ctx: Context, inp: Path, meta: Path, out: Path, bibs: list[Path]):
     pandoc = require("pandoc")
-    ref = ctx.config.reference_docx or _pkg_path("data", "reference.docx")
+    ref = ctx.config.reference_docx or _pkg_path(
+        "data", "reference-standard.docx" if ctx.config.profile == "standard" else "reference.docx")
     # cwd = workdir with copies of the local .sty files: pandoc reads \usepackage'd
     # files relative to cwd (not --resource-path), and that is how it sees local
     # macro packages; images are found through --resource-path.

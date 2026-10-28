@@ -54,6 +54,11 @@ tex2docx --check                       # все ли инструменты и �
 См. `examples/config.yaml`: движок TeX, шаблон стилей Word, имя доказательства, стили теорем,
 ручная подмена макросов, окружения-рисунки.
 
+Стандартный шаблон (Times New Roman 14, межстрочный 1,5, без интервалов между абзацами,
+черные заголовки): `tex2docx paper.tex --profile standard` или `profile: standard` в конфиге.
+Требования к нему — таблица `PROFILES["standard"]` в `scripts/make_reference_docx.py`; после
+правки пересобрать (`python scripts/make_reference_docx.py`) и закоммитить `reference-standard.docx`.
+
 Свой шаблон стилей: скопируйте `src/tex2docx/data/reference.docx`, поменяйте стили в Word
 (имена стилей Theorem, Definition, Remark, Proof, Equation, Centered, Right Aligned, Left Aligned не трогайте) и укажите в `reference_docx`.
 У стиля Equation два табулятора — центральный и правый; при другой ширине текста поправьте их.
