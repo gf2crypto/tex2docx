@@ -83,6 +83,28 @@ def babel_languages(text: str) -> list[str]:
     return langs
 
 
+_POLYGLOSSIA = re.compile(r"(?<!\\)\\setmainlanguage\s*(?:\[[^\]]*\])?\s*\{(\w+)\}")
+_CYRILLIC = re.compile(r"[\u0400-\u04FF]")
+_LATIN = re.compile(r"[A-Za-z]")
+
+
+def document_language(text: str) -> tuple[str, bool]:
+    """(language, guessed): babel's main language, else polyglossia's, else - guessed from
+    the body text (Cyrillic letters -> russian, otherwise english)."""
+    langs = babel_languages(text)
+    if langs:
+        return langs[-1], False
+    m = _POLYGLOSSIA.search(text)
+    if m:
+        return m.group(1).lower(), False
+    body_at = text.find("\\begin{document}")
+    body = text[body_at:] if body_at >= 0 else text
+    body = _CMD.sub("", body)  # command names are Latin letters too
+    cyr = len(_CYRILLIC.findall(body))
+    lat = len(_LATIN.findall(body))
+    return ("russian" if cyr > lat / 2 else "english"), True
+
+
 _CMD = re.compile(r"\\[A-Za-z@]+\*?\s*")
 
 

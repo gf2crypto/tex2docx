@@ -19,7 +19,7 @@ from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls, theorems_to_amsthm
 from tex2docx.texmf import expand_braces, package_requests
 from tex2docx.tools import unwrap_log
-from tex2docx.texscan import babel_languages, blank_comment_lines, read_group, strip_tex
+from tex2docx.texscan import babel_languages, document_language, blank_comment_lines, read_group, strip_tex
 
 # --- texscan -----------------------------------------------------------------
 
@@ -38,6 +38,13 @@ def test_strip_tex():
 def test_blank_comment_lines_keeps_numbering():
     s = "a\n  % c\nb % trailing stays\n"
     assert blank_comment_lines(s) == "a\n%\nb % trailing stays\n"
+
+
+def test_document_language():
+    assert document_language(r"\usepackage[english,russian]{babel}") == ("russian", False)
+    assert document_language(r"\setmainlanguage{russian}") == ("russian", False)
+    assert document_language("\\begin{document} Текст статьи по-русски, $x$ \\end{document}") == ("russian", True)
+    assert document_language("\\begin{document} English text only \\end{document}") == ("english", True)
 
 
 def test_babel_languages():

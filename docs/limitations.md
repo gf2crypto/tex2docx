@@ -12,5 +12,6 @@
 | Библиография из `.bib` | citeproc + CSL ГОСТ Р 7.0.5 (numeric) | вид близок к biblatex-gost, но не идентичен: у англоязычных записей «Т.», «С.» (biblatex-gost переключал бы язык по `langid`); другой стиль — ключ `csl:` |
 | `\cite{key}` без имени библиотеки при `multibbl` | «[?]» и `bibliography.unknown-key` | так же печатает LaTeX; ошибка автора |
 | Второй титульный блок (`\maketitleeng` журнальных классов) | заголовок и авторы абзацами по центру | у pandoc один титул |
+| Документ без babel/polyglossia | язык угадывается по тексту (кириллица → русский): «Рис.», «Аннотация», хотя LaTeX печатал бы «Figure», «Abstract» | по просьбе Владимира (2026-10-28); в отчете `names.language-guessed`; `figure_name`/`table_name` в конфиге переопределяют |
 | Картинки BMP/TIFF/GIF/WebP | PNG через Pillow или ImageMagick, если есть; иначе `figures.unsupported-format` | Word и pandoc их не вставляют; картинка, которой нет на диске, берется с тем же именем в другом формате (`figures.substituted`) |
 | Формулы с `\sideset`, `\prescript`, `\smash`, `\raisebox`, `\mathpalette`, tikz внутри формулы | картинка PNG (`pandoc.math-as-image`) | texmath их не знает; картинка в строке стоит на базовой линии, без «глубины» |

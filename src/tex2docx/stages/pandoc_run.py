@@ -19,7 +19,7 @@ from pathlib import Path
 from ..bibliography import ABSTRACT_TITLES, BIB_TITLES, KEYWORDS_TITLES, bib_files, is_bibtex
 from ..context import Context
 from ..texmf import personal_packages
-from ..texscan import babel_languages
+from ..texscan import document_language
 from ..tools import ToolError, require
 from ..tools import run as run_tool
 from . import StageError, mathimg
@@ -41,8 +41,7 @@ _CREFNAME = re.compile(r"(?<!\\)\\(crefname|Crefname)\s*\{(\w+)\}\s*\{([^{}]*)\}
 def cref_names(ctx: Context) -> dict:
     """cleveref names: the language defaults (data/cleveref-names.json, extracted from
     cleveref.sty) overridden by \\crefname/\\Crefname of the document and personal packages."""
-    langs = babel_languages(ctx.tex)
-    lang = langs[-1] if langs else "english"
+    lang, _ = document_language(ctx.tex)
     table = json.loads(_pkg_path("data", "cleveref-names.json").read_text(encoding="utf-8"))
     base = table.get(lang) or table["english"]
     names = {k: dict(v) for k, v in base["names"].items()}
@@ -64,10 +63,11 @@ def cref_names(ctx: Context) -> dict:
 
 
 def caption_names(ctx: Context) -> dict[str, str]:
-    langs = babel_languages(ctx.tex)
-    fig, tab, sep = CAPTION_NAMES.get(langs[-1] if langs else "english", CAPTION_NAMES["english"])
+    lang, guessed = document_language(ctx.tex)
+    if guessed:
+        ctx.report.info(STAGE, "names.language-guessed", lang)
+    fig, tab, sep = CAPTION_NAMES.get(lang, CAPTION_NAMES["english"])
     c = ctx.config
-    lang = langs[-1] if langs else "english"
     return {"figure": c.figure_name or fig, "table": c.table_name or tab,
             "sep": c.caption_sep if c.caption_sep is not None else sep,
             "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"]),

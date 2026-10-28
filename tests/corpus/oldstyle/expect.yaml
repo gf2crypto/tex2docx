@@ -1,9 +1,9 @@
 contains:
   - "Аннотация в кодировке cp1251."
-  - "Abstract"                   # без babel LaTeX печатает Abstract — так и оставляем
+  - "Аннотация"                  # без babel язык угадан по тексту (names.language-guessed)
   - "Заголовок по центру"
   - "Теорема 1."
-  - "Figure 1: Картинка"         # без babel — английская подпись, как в PDF
+  - "Рис. 1. Картинка"
 math_min: 4
 images_min: 1
 styles: [Theorem, Centered, Abstract, AbstractTitle]
