@@ -26,13 +26,15 @@ from . import StageError, mathimg
 
 STAGE = "pandoc"
 FILTERS = ["oldmath.lua", "crossref.lua", "theorems.lua", "captions.lua", "headings.lua",
-           "bibliography.lua", "lists.lua", "equations.lua", "mathimg.lua", "numbers.lua"]  # order matters; --citeproc after
+           "bibliography.lua", "lists.lua", "algorithms.lua", "equations.lua", "mathimg.lua",
+           "numbers.lua"]  # order matters; --citeproc after
 
 CAPTION_NAMES = {  # babel language -> (figure, table, separator after the number)
     "russian": ("Рис.", "Таблица", "."),
     "ukrainian": ("Рис.", "Таблиця", "."),
     "english": ("Figure", "Table", ":"),
 }
+ALGORITHM_NAMES = {"russian": "Алгоритм", "ukrainian": "Алгоритм", "english": "Algorithm"}
 
 
 _CREFNAME = re.compile(r"(?<!\\)\\(crefname|Crefname)\s*\{(\w+)\}\s*\{([^{}]*)\}\s*\{([^{}]*)\}")
@@ -72,6 +74,7 @@ def caption_names(ctx: Context) -> dict[str, str]:
             "sep": c.caption_sep if c.caption_sep is not None else sep,
             "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"]),
             "abstract": ABSTRACT_TITLES.get(lang, ABSTRACT_TITLES["english"]),
+            "algorithm": ALGORITHM_NAMES.get(lang, ALGORITHM_NAMES["english"]),
             "keywords": KEYWORDS_TITLES.get(lang, KEYWORDS_TITLES["english"])}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
@@ -89,7 +92,8 @@ HARMLESS_SKIPS = {
     "\\theorembodyfont", "\\theoremheaderfont", "\\theoremsymbol", "\\theoremseparator",
     "\\theoremindent", "\\theorempreskip", "\\theorempostskip", "\\theoremnumbering",
     "\\theoremprework", "\\theorempostwork", "\\declaretheoremstyle", "\\qedsymbol",
-    "\\begin{t2dabstract}", "\\end{t2dabstract}", "\\begin{t2dkeywords}", "\\end{t2dkeywords}", "\\begin{titlingpage}", "\\end{titlingpage}",
+    "\\begin{t2dabstract}", "\\end{t2dabstract}", "\\begin{t2dkeywords}", "\\end{t2dkeywords}",
+    "\\begin{t2dalgo}", "\\end{t2dalgo}", "\\algrenewcommand", "\\algnewcommand", "\\algtext", "\\begin{titlingpage}", "\\end{titlingpage}",
     "\\begin{flushleft}", "\\end{flushleft}", "\\begin{flushright}", "\\end{flushright}",
     "\\begin{center}", "\\end{center}", "\\begin{samepage}", "\\end{samepage}",
     "\\newblock", "\\markboth", "\\markright", "\\newbibliography",

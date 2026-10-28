@@ -14,6 +14,7 @@ from .context import Context
 from .report import Report
 from .stages import (
     StageError,
+    algorithms,
     autolabel,
     figures,
     flatten,
@@ -40,6 +41,7 @@ STAGES: list[Stage] = [
     Stage("theorems", theorems.run, fatal=False),
     Stage("normalize", normalize.run, fatal=False),
     Stage("macros", macros.run, fatal=False),
+    Stage("algorithms", algorithms.run, fatal=False),
     Stage("figures", figures.run, fatal=False),
     Stage("pandoc", pandoc_run.run, fatal=True),
     Stage("postprocess", postprocess.run, fatal=True),

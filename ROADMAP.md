@@ -51,7 +51,8 @@
       `thebibliography` → нумерованный список, номера цитат из `\bibcite`; кейсы `bibliography`, `thebib`.
 - [ ] Шаблоны под журналы: `examples/<journal>.yaml` + свой `reference.docx` — когда будут требования
       конкретного журнала (механизм `reference_docx`/`csl`/`theorem_styles` готов).
-- [x] Алгоритмы: картинкой через `preview` (`algorithm`/`algorithmic` в `figure_envs` по умолчанию).
+- [x] Алгоритмы: редактируемые строки в рамке (`stages/algorithms.py`, стили Algorithm/Algorithm Caption),
+      картинкой — `algorithms: image`.
 
 ## Сделано, но стоит пересмотреть
 

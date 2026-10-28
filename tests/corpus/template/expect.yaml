@@ -4,11 +4,15 @@ contains:
   - "— число запросов;"         # description одной строкой (lists.lua); сам термин — формула
   - "Рис. 1. Схема"
   - "См. теорему 1.1, рис. 1 и алгоритм 1."
+  - "Алгоритм 1. Генерация"       # псевдокод текстом в рамке (stages/algorithms.py)
+  - "1:\tfunction Gen()"
+  - "2:\t\t"                      # строка с формулой, уровень 1
+  - "3:\t\treturn"                # [noend] в преамбуле: строк end function нет
 not_contains:
   - "image"                       # картинка найдена через \graphicspath и расширение
-  - "Gen"                         # алгоритм — картинкой, не текстом
-images_min: 2                     # схема + алгоритм
-styles: [Theorem]
+  - "\\State"
+images_min: 1                     # схема; алгоритм — текст
+styles: [Theorem, Algorithm, AlgorithmCaption]
 report_absent:
   - latex.compile-errors
   - crossref.unresolved

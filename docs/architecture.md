@@ -19,6 +19,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 | theorems | `stages/theorems.py` | `\newtheorem`, `\theoremstyle`, `\declaretheorem` → `ctx.theorems` | готов (amsthm, thmtools, ntheorem) |
 | normalize | `stages/normalize.py` | бабелевские сокращения в `ctx.tex` | готов |
 | macros | `stages/macros.py` | определения из личных пакетов (`texmf.py`, kpsewhich) + конфиг | готов |
+| algorithms | `stages/algorithms.py` | `algorithmic` → строки-абзацы `t2dalgo` для pandoc (рамка, номера, отступы) | готов |
 | figures | `stages/figures.py` | `preview` → PNG → `\includegraphics` | готов |
 | pandoc | `stages/pandoc_run.py` | pandoc + фильтры, сбор сообщений; второй проход с картинками формул | готов |
 | (mathimg) | `stages/mathimg.py` | непереводимые формулы → PNG через `preview` (вызывается из pandoc) | готов |
@@ -45,7 +46,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 путь передается метаданными `-M t2d-meta=<path>`, фильтр читает его через `t2d.load(doc.meta)`.
 
 Фильтры выполняются по порядку из `FILTERS`: `crossref` → `theorems` → `captions` → `headings` → `bibliography`
-→ `lists` → `equations` → `mathimg` → `numbers` (последний: маркеры номеров → текст или поля, ADR 0006).
+→ `lists` → `algorithms` → `equations` → `mathimg` → `numbers` (последний: маркеры номеров → текст или поля, ADR 0006).
 `equations` последним, потому что он разрезает абзацы, а `theorems` ищет заголовок в первом абзаце `Div`.
 
 ## Библиография

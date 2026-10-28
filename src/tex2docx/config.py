@@ -40,9 +40,12 @@ class Config:
     macros: dict[str, str] = field(default_factory=dict)
     # Environments rendered as pictures via the preview package.
     figure_envs: list[str] = field(default_factory=lambda: [
-        "tikzpicture", "algorithm", "algorithmic",
+        "tikzpicture",
         "pchstack", "pcvstack", "procedure", "pseudocode",  # cryptocode
     ])
+    # Pseudocode (algorithmic / algpseudocode): "text" = editable lines in a box (stages/
+    # algorithms.py), "image" = picture via preview (algorithm/algorithmic added to figure_envs).
+    algorithms: str = "text"
     figure_dpi: int = 300
     # Numbers as Word fields (SEQ in bookmarks, references as REF), so that Word renumbers
     # after editing; plain-number objects only (ADR 0006). Off: numbers are text as in the PDF.
@@ -60,6 +63,10 @@ class Config:
             raise ValueError(f"engine must be one of {ENGINES}, got {self.engine!r}")
         if self.profile not in (None, "default", "standard"):
             raise ValueError(f"unknown profile {self.profile!r}; known: default, standard")
+        if self.algorithms not in ("text", "image"):
+            raise ValueError(f"algorithms must be 'text' or 'image', got {self.algorithms!r}")
+        if self.algorithms == "image":
+            self.figure_envs = list(self.figure_envs) + ["algorithm", "algorithmic"]
         if self.math_fallback not in ("image", "text"):
             raise ValueError(f"math_fallback must be 'image' or 'text', got {self.math_fallback!r}")
 

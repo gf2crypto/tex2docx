@@ -8,7 +8,9 @@
   (amsthm, thmtools, ntheorem);
 - номера разделов, теорем, формул, рисунков и все ссылки (`\ref`, `\eqref`, `\cref`) —
   **ровно как в PDF**: берутся из `.aux` настоящего LaTeX;
-- рисунки TikZ, алгоритмы (`algorithmic`), псевдокод cryptocode — картинками с преамбулой документа;
+- алгоритмы (`algorithmic`/`algpseudocode`) — редактируемый псевдокод в рамке: ключевые слова, номера строк,
+  отступы, формулы — формулы Word (или картинкой: `algorithms: image`);
+- рисунки TikZ и псевдокод cryptocode — картинками с преамбулой документа;
   PNG/JPG/PDF-картинки вставляются как есть (PDF/BMP/TIFF переводятся в PNG);
 - библиография: biblatex/`.bib` → список по ГОСТ Р 7.0.5 (citeproc, офлайн),
   BibTeX/`.bst` и `thebibliography` → список ровно как в PDF, цитаты с номерами LaTeX;
@@ -70,8 +72,8 @@ tex2docx --check                         # проверка окружения
 тест `tests/corpus/standard` проверяет стили готового docx.
 
 Свой шаблон (например, под журнал): скопируйте `src/tex2docx/data/reference.docx`, поменяйте
-стили в Word (имена стилей Theorem, Definition, Remark, Proof, Equation, Centered,
-Right Aligned, Left Aligned не трогайте; у Equation два табулятора — центральный и правый,
+стили в Word (имена стилей Theorem, Definition, Remark, Proof, Equation, Algorithm, Algorithm Caption,
+Centered, Right Aligned, Left Aligned не трогайте; у Equation два табулятора — центральный и правый,
 под свою ширину текста) и укажите путь в конфиге: `reference_docx: journal.docx`.
 
 ## Отчет
