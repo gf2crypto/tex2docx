@@ -17,7 +17,8 @@ class Config:
     # Word style template; None means the bundled data/reference.docx.
     reference_docx: Path | None = None
     # Bundled template profile: "standard" = data/reference-standard.docx (Times New Roman 14,
-    # no paragraph spacing, 1.5 line spacing, black headings; see scripts/make_reference_docx.py).
+    # no paragraph spacing, 1.5 line spacing, 1.25 cm first-line indent, justified text,
+    # black headings; see scripts/make_reference_docx.py).
     # reference_docx, when set, wins.
     profile: str | None = None
     # Heading of the proof environment (pandoc writes English "Proof.").

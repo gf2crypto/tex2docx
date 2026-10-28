@@ -31,20 +31,22 @@ DATA = Path(__file__).resolve().parents[1] / "src" / "tex2docx" / "data"
 #   heading_color       - RGB hex for Title, Subtitle, Heading 1-9 (None = pandoc's blue)
 #   heading_sizes       - {style name: points} when headings differ from the body size
 #   first_line_indent   - cm, for body paragraphs (None = pandoc's default)
+#   justify             - True: body paragraphs justified (both margins)
 PROFILES: dict[str, dict] = {
     "default": dict(font="Times New Roman", size=12, space_before=None, space_after=None,
                     line_spacing=None, heading_color=None, heading_sizes={},
-                    first_line_indent=None),
+                    first_line_indent=None, justify=False),
     # Требования заказчика к стандартному шаблону (2026-10-28): Times New Roman 14,
-    # без интервалов между абзацами, межстрочный 1,5, все заголовки черные.
+    # без интервалов между абзацами, межстрочный 1,5, все заголовки черные,
+    # текст по ширине, абзацный отступ 1,25 см.
     "standard": dict(font="Times New Roman", size=14, space_before=0, space_after=0,
                      line_spacing=1.5, heading_color="000000", heading_sizes={},
-                     first_line_indent=None),
+                     first_line_indent=1.25, justify=True),
 }
 OUTPUTS = {"default": "reference.docx", "standard": "reference-standard.docx"}
-HEADINGS = ["Title", "Subtitle", "Author", "Date"] + [f"Heading {i}" for i in range(1, 10)]
+HEADINGS = ["Title", "Subtitle", "Author", "Date", "Abstract Title"] + [f"Heading {i}" for i in range(1, 10)]
 BODY_STYLES = ["Normal", "Body Text", "First Paragraph", "Compact", "Block Text", "Abstract",
-               "Abstract Title", "Bibliography", "Caption", "Table Caption", "Image Caption",
+               "Bibliography", "Caption", "Table Caption", "Image Caption",
                "Definition Term", "Definition", "Footnote Text", "Source Code"]
 
 # Page: A4 with the usual Russian-article margins. pandoc copies the section
@@ -90,12 +92,27 @@ def apply_profile(doc: Document, profile: dict) -> None:
             rpr.insert(0, rfonts)
         for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
             rfonts.set(qn(attr), profile["font"])
+        # theme fonts/colors (pandoc's headings: majorHAnsi, accent1) override explicit values
+        for attr in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+            if rfonts.get(qn(attr)) is not None:
+                del rfonts.attrib[qn(attr)]
+        color = rpr.find(qn("w:color"))
+        if color is not None:
+            for attr in ("w:themeColor", "w:themeShade", "w:themeTint"):
+                if color.get(qn(attr)) is not None:
+                    del color.attrib[qn(attr)]
         if name in HEADINGS:
             st.font.size = Pt(profile["heading_sizes"].get(name, profile["size"]))
             if profile["heading_color"]:
                 st.font.color.rgb = RGBColor.from_string(profile["heading_color"])
             if st.font.bold is None:
                 st.font.bold = True
+            # headings inherit from Normal: no body indent / justification there
+            st.paragraph_format.first_line_indent = Cm(0)
+            if name in ("Title", "Subtitle", "Author", "Date", "Abstract Title"):
+                st.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            elif profile["justify"]:
+                st.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
         else:
             st.font.size = body_pt
         pf = st.paragraph_format
@@ -105,8 +122,11 @@ def apply_profile(doc: Document, profile: dict) -> None:
             pf.space_after = Pt(profile["space_after"])
         if profile["line_spacing"] is not None:
             pf.line_spacing = profile["line_spacing"]
-        if profile["first_line_indent"] is not None and name in ("Body Text", "First Paragraph"):
-            pf.first_line_indent = Cm(profile["first_line_indent"])
+        if name in ("Body Text", "First Paragraph", "Normal"):
+            if profile["first_line_indent"] is not None:
+                pf.first_line_indent = Cm(profile["first_line_indent"])
+            if profile["justify"]:
+                pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
 
 def build(profile_name: str) -> Path:
@@ -139,6 +159,16 @@ def build(profile_name: str) -> Path:
         st.paragraph_format.space_after = Pt(6 if sp_after is None else sp_after)
         st.paragraph_format.keep_together = True
 
+    # styles based on Body Text that must not inherit the body indent/justification
+    for name in ("Compact", "Bibliography", "Image Caption", "Table Caption"):
+        st = _style(styles, name)
+        if st is not None:
+            st.paragraph_format.first_line_indent = Cm(0)
+            if name in ("Image Caption", "Table Caption"):
+                st.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            elif profile["justify"]:
+                st.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
     # center / flushright / flushleft environments (filters/lists.lua)
     for name, align in (("Centered", WD_ALIGN_PARAGRAPH.CENTER),
                         ("Right Aligned", WD_ALIGN_PARAGRAPH.RIGHT),
@@ -161,6 +191,7 @@ def build(profile_name: str) -> Path:
     pf = eq.paragraph_format
     pf.first_line_indent = Cm(0)
     pf.left_indent = Cm(0)
+    pf.alignment = WD_ALIGN_PARAGRAPH.LEFT  # tabs do the centering
     pf.space_before = Pt(6 if sp_before is None else sp_before)
     pf.space_after = Pt(6 if sp_after is None else sp_after)
     pf.keep_together = True

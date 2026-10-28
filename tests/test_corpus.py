@@ -69,6 +69,14 @@ def check_template(docx: Path, tpl: dict, case: str) -> None:
             assert st.paragraph_format.line_spacing == tpl["line_spacing"], f"{case}: {st.name} spacing"
         if "space_after_pt" in tpl:
             assert st.paragraph_format.space_after.pt == tpl["space_after_pt"], f"{case}: {st.name} after"
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    for st in body:
+        if "first_line_indent_cm" in tpl and st.style_id != "Normal":
+            assert round(st.paragraph_format.first_line_indent.cm, 2) == tpl["first_line_indent_cm"], \
+                f"{case}: {st.name} indent"
+        if tpl.get("justify"):
+            assert st.paragraph_format.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY, f"{case}: {st.name} align"
     for st in heads:
         if "heading_color" in tpl:
             assert str(st.font.color.rgb) == tpl["heading_color"], f"{case}: {st.name} color"

@@ -55,7 +55,7 @@ tex2docx --check                       # все ли инструменты и �
 ручная подмена макросов, окружения-рисунки.
 
 Стандартный шаблон (Times New Roman 14, межстрочный 1,5, без интервалов между абзацами,
-черные заголовки): `tex2docx paper.tex --profile standard` или `profile: standard` в конфиге.
+абзацный отступ 1,25 см, текст по ширине, черные заголовки): `tex2docx paper.tex --profile standard` или `profile: standard` в конфиге.
 Требования к нему — таблица `PROFILES["standard"]` в `scripts/make_reference_docx.py`; после
 правки пересобрать (`python scripts/make_reference_docx.py`) и закоммитить `reference-standard.docx`.
 

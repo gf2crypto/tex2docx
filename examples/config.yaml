@@ -4,7 +4,8 @@
 engine: pdflatex            # pdflatex | xelatex | lualatex
 
 # Встроенный профиль шаблона Word: standard — Times New Roman 14, без интервалов между абзацами,
-# межстрочный 1,5, заголовки черные (требования хранятся в scripts/make_reference_docx.py).
+# межстрочный 1,5, отступ первой строки 1,25 см, по ширине, заголовки черные
+# (требования хранятся в scripts/make_reference_docx.py).
 # profile: standard
 
 # Свой шаблон стилей Word (путь относительно этого файла); имеет приоритет над profile.
