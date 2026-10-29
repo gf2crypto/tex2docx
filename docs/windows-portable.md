@@ -26,7 +26,10 @@ tex2docx-portable\
    - poppler: `Release-<версия>-0.zip` с
      https://github.com/oschwartz10612/poppler-windows/releases/latest.
 
-2. В корне репозитория выполните (нужен установленный Python и `git`):
+2. В корне репозитория выполните (нужен установленный Python и `git`). PowerShell по умолчанию
+   запрещает запуск скриптов («running scripts is disabled on this system») — разрешите его
+   для текущего окна: `Set-ExecutionPolicy -Scope Process Bypass` (без прав администратора,
+   действует до закрытия окна). Имена архивов подставьте свои:
 
    ```powershell
    .\scripts\portable\make-portable.ps1 -PythonVersion 3.12.7 `

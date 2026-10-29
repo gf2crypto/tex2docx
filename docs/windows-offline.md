@@ -43,6 +43,7 @@
 в папке репозитория (PowerShell):
 
 ```powershell
+Set-ExecutionPolicy -Scope Process Bypass    # PowerShell по умолчанию не запускает скрипты
 .\scripts\download-offline-deps.ps1
 ```
 
