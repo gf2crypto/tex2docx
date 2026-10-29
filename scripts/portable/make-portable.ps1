@@ -36,7 +36,11 @@ python -m pip download --dest $wheels --platform win_amd64 --python-version ($Py
     --only-binary=:all: python-docx lxml PyYAML Pillow
 if ($LASTEXITCODE -ne 0) { throw "pip download failed" }
 Get-ChildItem $wheels -Filter *.whl | ForEach-Object {
-    Expand-Archive $_.FullName -DestinationPath $site -Force
+    # Expand-Archive accepts only the .zip extension: a wheel is a zip under another name
+    $zip = [System.IO.Path]::ChangeExtension($_.FullName, ".zip")
+    Copy-Item $_.FullName $zip -Force
+    Expand-Archive $zip -DestinationPath $site -Force
+    Remove-Item $zip
 }
 Remove-Item $wheels -Recurse
 
