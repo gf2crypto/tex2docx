@@ -1,4 +1,4 @@
-# Собирает в папку offline\ все Python-зависимости и исходники tex2docx для переноса
+﻿# Собирает в папку offline\ все Python-зависимости и исходники tex2docx для переноса
 # на компьютер без интернета (docs/windows-offline.md, шаг 5).
 # Запускать на компьютере с интернетом из корня репозитория:
 #   .\scripts\download-offline-deps.ps1 [-PythonVersion 3.12]
@@ -17,5 +17,5 @@ if ($LASTEXITCODE -ne 0) { throw "pip download failed" }
 git -C $root archive -o (Join-Path $out "tex2docx-src.zip") HEAD
 if ($LASTEXITCODE -ne 0) { throw "git archive failed" }
 
-Write-Host "Готово: $out"
+Write-Host "Done: $out"
 Get-ChildItem $wheels | Select-Object Name, Length

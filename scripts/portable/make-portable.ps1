@@ -1,4 +1,4 @@
-# Собирает переносимую папку tex2docx-portable\ (без установки и прав администратора):
+﻿# Собирает переносимую папку tex2docx-portable\ (без установки и прав администратора):
 #   python\   — Python embeddable + пакеты из колес, tex2docx внутри site-packages
 #   pandoc\   — pandoc.exe из zip
 #   poppler\  — pdftoppm.exe и его DLL из zip poppler-windows
@@ -61,4 +61,4 @@ Remove-Item (Join-Path $out "poppler-tmp") -Recurse
 # 5. запуск
 Copy-Item (Join-Path $PSScriptRoot "tex2docx.bat") $out -Force
 New-Item -ItemType Directory -Force -Path (Join-Path $out "texmf-home") | Out-Null
-Write-Host "Готово: $out. Осталось поставить TeX Live в $out\texlive (install-tl-windows.bat -portable)."
+Write-Host "Done: $out. Now install TeX Live into $out\texlive (install-tl-windows.bat -portable)."
