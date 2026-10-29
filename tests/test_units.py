@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tex2docx.aux import parse_aux_text
+from tex2docx.auxfile import parse_aux_text
 from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
