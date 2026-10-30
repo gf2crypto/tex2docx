@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from ..aux import parse_aux, parse_aux_bibcites
+from ..auxfile import parse_aux, parse_aux_bibcites
 from ..bibliography import strip_dot_paths
 from ..context import Context
 from ..tools import ToolError, latexmk, log_errors

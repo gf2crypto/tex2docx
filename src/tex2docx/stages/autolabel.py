@@ -39,7 +39,7 @@ PREFIX = "t2d:auto:"
 
 AFTER_BEGIN = {"equation", "subequations", "multline"}
 PER_LINE = {"align", "alignat", "flalign", "gather", "eqnarray"}
-FLOATS = {"figure", "figure*", "table", "table*"}
+FLOATS = {"figure", "figure*", "table", "table*", "algorithm"}
 VERBATIM = {"verbatim", "verbatim*", "lstlisting", "minted", "comment", "Verbatim"}
 
 SECTIONING = {"chapter", "section", "subsection", "subsubsection", "paragraph"}

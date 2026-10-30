@@ -169,6 +169,35 @@ def build(profile_name: str) -> Path:
             elif profile["justify"]:
                 st.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
+    # pseudocode (filters/algorithms.lua): lines in a box, caption above it
+    alg = _style(styles, "Algorithm") or styles.add_style("Algorithm", WD_STYLE_TYPE.PARAGRAPH)
+    alg.base_style = base
+    apf = alg.paragraph_format
+    apf.first_line_indent = Cm(0)
+    apf.left_indent = Cm(0)
+    apf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    apf.space_before = Pt(0)
+    apf.space_after = Pt(0)
+    apf.keep_together = True
+    apf.keep_with_next = True
+    apf.tab_stops.clear_all()
+    for i in range(1, 9):
+        apf.tab_stops.add_tab_stop(Cm(0.9 + 0.6 * i))
+    ppr = alg.element.get_or_add_pPr()
+    pbdr = ppr.makeelement(qn("w:pBdr"), {})
+    for side in ("top", "left", "bottom", "right"):
+        b = pbdr.makeelement(qn(f"w:{side}"), {})
+        for k, v in (("w:val", "single"), ("w:sz", "6"), ("w:space", "4"), ("w:color", "000000")):
+            b.set(qn(k), v)
+        pbdr.append(b)
+    ppr.append(pbdr)
+    cap = _style(styles, "Algorithm Caption") or styles.add_style("Algorithm Caption", WD_STYLE_TYPE.PARAGRAPH)
+    cap.base_style = base
+    cap.paragraph_format.first_line_indent = Cm(0)
+    cap.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    cap.paragraph_format.keep_with_next = True
+    cap.paragraph_format.space_after = Pt(0)
+
     # center / flushright / flushleft environments (filters/lists.lua)
     for name, align in (("Centered", WD_ALIGN_PARAGRAPH.CENTER),
                         ("Right Aligned", WD_ALIGN_PARAGRAPH.RIGHT),

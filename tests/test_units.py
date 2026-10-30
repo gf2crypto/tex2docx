@@ -5,11 +5,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tex2docx.aux import parse_aux_text
+from tex2docx.auxfile import parse_aux_text
 from tex2docx.config import Config
 from tex2docx.context import Context
 from tex2docx.report import Report
 from tex2docx.stages.autolabel import insert_labels
+from tex2docx.stages.algorithms import parse_lines, rewrite
 from tex2docx.stages.figures import outermost_spans
 from tex2docx.stages.flatten import flatten_lines, flatten_text, read_source, source_encoding
 from tex2docx.stages.normalize import normalize_text, second_title_block
@@ -193,6 +194,29 @@ def test_normalize_math_envs():
     assert normalize_text("\\begin{subequations}\\label{s}\n\\begin{equation}\\label{a} x "
                           "\\end{equation}\n\\end{subequations}") \
         == "\n\\begin{equation}\\label{a} x \\end{equation}\n"
+
+
+# --- algorithms --------------------------------------------------------------
+
+def test_algorithm_lines():
+    body = r"""
+\Require $n$
+\Function{Gen}{$k$}
+  \State $b \gets 1$ \Comment{init}
+  \If{$b > 0$} \State \Return{$b$} \Else \State $b \gets 2$ \EndIf
+\EndFunction
+"""
+    lines = parse_lines(body, noend=False, step=1)
+    assert lines[0] == ("", 0, r"\textbf{Require:} $n$")
+    assert lines[1] == ("1", 0, r"\textbf{function} \textsc{Gen}($k$)")
+    assert lines[2] == ("2", 1, r"$b \gets 1$ $\triangleright$ init")
+    assert lines[3] == ("3", 1, r"\textbf{if} $b > 0$ \textbf{then}")
+    assert lines[4] == ("4", 2, r"\textbf{return} {$b$}")
+    assert lines[5] == ("5", 1, r"\textbf{else}")
+    assert lines[7] == ("7", 1, r"\textbf{end if}")
+    assert [ln[2] for ln in parse_lines(body, noend=True, step=0)][-1] == r"$b \gets 2$"
+    out, n = rewrite("\\begin{algorithmic}[1]\n\\State x\n\\end{algorithmic}\ntail")
+    assert n == 1 and out.count("\n") == 3 and out.startswith("\\begin{t2dalgo} T2DALG:1:0: x \\par \\end{t2dalgo}")
 
 
 # --- figures -----------------------------------------------------------------

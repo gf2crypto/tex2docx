@@ -32,7 +32,11 @@ macros:
   '\code': '\mathcal'
 
 # Окружения, которые рендерятся картинками через пакет preview.
-figure_envs: [tikzpicture, algorithm, algorithmic, pchstack, pcvstack, procedure, pseudocode]
+figure_envs: [tikzpicture, pchstack, pcvstack, procedure, pseudocode]
+
+# Псевдокод (algorithmic/algpseudocode): text — строки в рамке, редактируемые, формулы — формулы Word;
+# image — картинка через preview, как в PDF.
+algorithms: text
 figure_dpi: 300
 
 # Живые номера: формулы/теоремы/рисунки — поля SEQ, ссылки — поля REF (Word пересчитает
