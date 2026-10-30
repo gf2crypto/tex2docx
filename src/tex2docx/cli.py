@@ -19,6 +19,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-c", "--config", type=Path, help="YAML config")
     p.add_argument("--engine", choices=["pdflatex", "xelatex", "lualatex"],
                    help="override config.engine")
+    p.add_argument("--profile", choices=["default", "standard"],
+                   help="bundled Word template: standard = Times New Roman 14, 1.5 spacing, "
+                        "no paragraph spacing, black headings")
     p.add_argument("--workdir", type=Path, help="keep intermediate files in this directory")
     p.add_argument("--keep-workdir", action="store_true",
                    help="do not delete the temporary working directory")
@@ -34,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     config = Config.load(a.config)
     if a.engine:
         config.engine = a.engine
+    if a.profile:
+        config.profile = a.profile
     output = a.output or a.source.with_suffix(".docx")
 
     report = convert(a.source, output, config, workdir=a.workdir, keep_workdir=a.keep_workdir)

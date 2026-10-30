@@ -16,6 +16,11 @@ class Config:
     engine: str = "pdflatex"
     # Word style template; None means the bundled data/reference.docx.
     reference_docx: Path | None = None
+    # Bundled template profile: "standard" = data/reference-standard.docx (Times New Roman 14,
+    # no paragraph spacing, 1.5 line spacing, 1.25 cm first-line indent, justified text,
+    # black headings; see scripts/make_reference_docx.py).
+    # reference_docx, when set, wins.
+    profile: str | None = None
     # Heading of the proof environment (pandoc writes English "Proof.").
     proof_name: str = "Доказательство"
     # amsthm \theoremstyle -> Word paragraph style name.
@@ -53,6 +58,8 @@ class Config:
     def __post_init__(self) -> None:
         if self.engine not in ENGINES:
             raise ValueError(f"engine must be one of {ENGINES}, got {self.engine!r}")
+        if self.profile not in (None, "default", "standard"):
+            raise ValueError(f"unknown profile {self.profile!r}; known: default, standard")
         if self.math_fallback not in ("image", "text"):
             raise ValueError(f"math_fallback must be 'image' or 'text', got {self.math_fallback!r}")
 
