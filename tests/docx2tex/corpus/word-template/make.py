@@ -48,6 +48,10 @@ def main() -> None:
     eq.add_run("\t")
     eq._p.append(omml("display-sum"))
     eq.add_run("\t(2.1)")
+    p = doc.add_paragraph(style=style(doc, "Theorem"))  # the theorem goes on after its formula
+    p.add_run("где ").italic = True
+    p._p.append(omml("inline-x2"))
+    p.add_run(" — квадрат.").italic = True
     p = doc.add_paragraph(style=style(doc, "Proof"))
     p.add_run("Доказательство.").italic = True
     p.add_run(" Следует из (2.1) и [1].\t◻")

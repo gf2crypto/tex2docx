@@ -26,9 +26,17 @@ RULES: list[tuple[str, str]] = [
     (r"\\texorpdfstring\{([^{}]*)\}\{[^{}]*\}", r"\1"),
     (r"\\\((.+?)\\\)", r"$\1$"),
     (r"\u00a0", "~"),
+    # Unicode spaces Word and pandoc leave behind (pdflatex cannot take them in text)
+    (r"[\u2006\u2009\u200a]", r"\\,"),          # thin / six-per-em / hair: \,
+    (r"[\u2007\u202f]", "~"),                     # figure space, narrow nbsp
+    (r"\u2003", r"\\quad "),
+    (r"[\u2000-\u2005\u2008]", " "),
+    (r"[\u200b\u200c\u200d\ufeff]", ""),         # zero-width
     # our own environments: no blank line right after \\begin{...} and before \\end{...}
     (r"(\\begin\{[a-z*]+\}(?:\[[^\]\n]*\])?(?:\\label\{[^}]*\})*)\n\n", r"\1\n"),
     (r"\n\n(\\end\{[a-z*]+\})", r"\n\1"),
+    # a sentence that goes on after a display formula ("где ...") is the same paragraph
+    (r"(\\end\{(?:equation|align|gather|multline|subequations)\*?\}|\\\])\n\n(?=[a-zа-яё])", r"\1\n"),
     (r"[ \t]+\n", "\n"),
     (r"\n{3,}", "\n\n"),
 ]

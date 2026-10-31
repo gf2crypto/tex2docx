@@ -383,6 +383,11 @@ local function split_theorem_head(para)
   local htext = trim(stringify(head))
   local title = trim((htext:gsub('[%s' .. NBSP .. ']*[%d%.]+%.?$', '')))
   if title == '' then return nil end
+  -- a head is a known theorem word, or bold text with a number ("Соглашение 2"); an italic
+  -- "2. Пусть ..." or "где" is the body of a continuation paragraph
+  local key = lower(title)
+  local known = theorem_envs[key] or (key:match('^(%S+)') and theorem_envs[key:match('^(%S+)')])
+  if not known and not (head.t == 'Strong' and htext:match('%d')) then return nil end
   local i = 2
   -- "." right after the head
   if ins[i] and ins[i].t == 'Str' and ins[i].text:match('^%.') then
@@ -933,20 +938,22 @@ end
 local LEVELS = { 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph' }
 
 local function header_number(inlines)
-  -- "1 Введение" (number, Space) or "1\160Введение" (one Str)
+  -- "1 Введение" (number, Space) or "1\160Введение" (one Str); Roman "IV" too (memoir, amsart)
   local first = inlines[1]
   if not first or first.t ~= 'Str' then return inlines, false end
-  local rest = first.text:match('^%d[%d%.]*' .. NBSP .. '(.*)$')
   local out = pandoc.List(inlines)
-  if rest then
-    out[1] = pandoc.Str(rest)
-    if rest == '' then out:remove(1) end
-    return out, true
-  end
-  if first.text:match('^%d[%d%.]*$') and (inlines[2] == nil or inlines[2].t == 'Space') then
-    out:remove(1)
-    if out[1] and out[1].t == 'Space' then out:remove(1) end
-    return out, true
+  for _, num in ipairs({ '%d[%d%.]*', '[IVXLC]+%.?' }) do
+    local rest = first.text:match('^' .. num .. NBSP .. '(.*)$')
+    if rest then
+      out[1] = pandoc.Str(rest)
+      if rest == '' then out:remove(1) end
+      return out, true
+    end
+    if first.text:match('^' .. num .. '$') and inlines[2] and inlines[2].t == 'Space' and inlines[3] then
+      out:remove(1)
+      out:remove(1)
+      return out, true
+    end
   end
   return inlines, false
 end
@@ -1019,6 +1026,11 @@ local WRAPPERS = { ['Body Text'] = true, ['First Paragraph'] = true, ['Normal'] 
   ['List Bullet'] = true, ['List Number'] = true, ['List Paragraph'] = true, ['Captioned Figure'] = true }
 
 local process -- forward
+
+local function has_head(div)
+  local first = div.content[1]
+  return first ~= nil and first.t == 'Para' and split_theorem_head(first) ~= nil
+end
 
 local function wrap_env(env, blocks)
   local out = { raw('\\begin{' .. env .. '}') }
@@ -1101,7 +1113,7 @@ process = function(blocks)
     elseif b.t == 'Para' and in_theorem == 0 and text_proof(b) then
       report('info', 'proof.by-text', '')
       push(emit_proof(pandoc.Div({ b }), process))
-    elseif st and THEOREM_STYLES[st] then
+    elseif st and THEOREM_STYLES[st] and (in_theorem == 0 or has_head(b)) then
       -- the bookmark of the theorem may run over the following paragraphs (its formulas)
       local _, _, names = take_labels(b)
       local k = find_end(blocks, i + 1, names)
@@ -1110,6 +1122,20 @@ process = function(blocks)
         extra = {}
         for q = i + 1, k do extra[#extra + 1] = blocks[q] end
         i = k
+      end
+      -- further paragraphs of the same style without a head: the theorem goes on, with the
+      -- display formulas standing between them
+      while true do
+        local j = i + 1
+        while blocks[j] and (style_of(blocks[j]) == 'Equation' or (blocks[j].t == 'Para' and only_math(blocks[j]))) do
+          j = j + 1
+        end
+        local nxt = blocks[j]
+        if not (nxt and nxt.t == 'Div' and style_of(nxt) == st and not has_head(nxt)) then break end
+        extra = extra or {}
+        for q = i + 1, j - 1 do extra[#extra + 1] = blocks[q] end
+        for _, blk in ipairs(nxt.content) do extra[#extra + 1] = blk end
+        i = j
       end
       push(emit_theorem(b, st, process, extra))
     elseif st == 'Proof' then
@@ -1142,7 +1168,8 @@ process = function(blocks)
     elseif st == 'Abstract Title' or st == 'Title' or st == 'Author' or st == 'Date' then
       report('info', 'style.dropped', st)
     elseif b.t == 'Div' then
-      if st and not WRAPPERS[st] then report('info', 'style.unknown', st) end
+      -- (a theorem-style Div without a head inside a theorem: its further paragraphs)
+      if st and not WRAPPERS[st] and not THEOREM_STYLES[st] then report('info', 'style.unknown', st) end
       push(process(b.content))
     elseif b.t == 'Header' then
       push({ emit_header(b) })

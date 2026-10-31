@@ -2,7 +2,7 @@
 tex_contains:
   - "\\section{Глава из Word}"            # номер заголовка отброшен
   - "\\begin{theorem}\nДля любого $x^{2}$ утверждение верно."
-  - "\\begin{equation}\n  \\sum_{i = 1}^{n}x_{i}\n\\end{equation}"
+  - "\\begin{equation}\n  \\sum_{i = 1}^{n}x_{i}\n\\end{equation}\nгде $x^{2}$ --- квадрат.\n\\end{theorem}"   # абзац продолжения
   - "\\begin{proof}\nСледует из (2.1) и \\cite{bib:1}.\n\\end{proof}"   # знака конца нет
   - "\\caption{Поиск}"
   - "\\For{всех}"
