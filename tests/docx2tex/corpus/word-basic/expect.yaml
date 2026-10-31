@@ -8,8 +8,10 @@ tex_contains:
   - "\\begin{enumerate}"
   - "\\begin{tabular}"
   - "\\includegraphics{images/image1.png}"
-  - "\\[\\sum_{i = 1}^{n}x_{i}\\]"       # абзац из одной формулы -> выносная
+  - "\\[\n  \\sum_{i = 1}^{n}x_{i}\n\\]"   # абзац из одной формулы -> выносная
   - "$x^{2}$ --- и дальше"           # тире Word -> ---
+  - "\\caption{Подпись к рисунку}"   # абзац стиля Caption после картинки -> figure (M1)
+  - "\\begin{figure}"
 tex_not_contains:
   - "\\usepackage"                   # фрагмент без преамбулы
   - "\\\\\\\\"                         # ручных переносов строк нет
@@ -18,5 +20,3 @@ packages: [graphicx]
 report_absent:
   - math.not-omml
   - internal-error
-xfail_tex_contains:
-  - "\\caption{Подпись к рисунку}"   # M1: абзац стиля Caption после картинки -> figure

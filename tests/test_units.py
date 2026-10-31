@@ -433,3 +433,21 @@ def test_autolabel_subequations_source_order():
     out, n = insert_labels(src, set())
     assert n == 2
     assert "\\begin{subequations}\\label{t2d:auto:1}\n\\begin{equation}\\label{t2d:auto:2} n" in out
+
+
+# --- sidecar (ADR 0008) --------------------------------------------------------
+
+def test_sidecar_round_trips_through_xml(tmp_path):
+    from tex2docx.sidecar import Sidecar
+
+    sc = Sidecar(source="main.tex", language="russian", profile="standard",
+                 names={"figure": "Рис.", "sep": "."},
+                 theorems={"theorem": {"title": "Теорема", "style": "plain", "numbered": "true"}},
+                 labels={"t2d_thm_main": "thm:main"}, label_kinds={"thm:main": "theorem"},
+                 macros={"\\matr": "\\mathbf"}, cites={"1": "knuth", "2": "lamport"})
+    path = Sidecar.path_for(tmp_path / "main.docx")
+    assert path.name == "main.t2d.xml"
+    sc.save(path)
+    back = Sidecar.load(path)
+    assert back == sc
+    assert "<cite key=\"knuth\" number=\"1\" />" in path.read_text(encoding="utf-8")

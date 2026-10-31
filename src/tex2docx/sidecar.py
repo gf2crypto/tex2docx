@@ -14,6 +14,9 @@ next round. Plain XML, UTF-8, no document text.
   <labels>
     <label bookmark="t2d_thm_main" name="thm:main" kind="theorem"/>
   </labels>
+  <cites>
+    <cite key="knuth" number="1"/>
+  </cites>
   <macros>
     <macro name="\matr" body="\mathbf"/>
   </macros>
@@ -39,6 +42,7 @@ class Sidecar:
     labels: dict[str, str] = field(default_factory=dict)  # bookmark -> label
     label_kinds: dict[str, str] = field(default_factory=dict)  # label -> kind
     macros: dict[str, str] = field(default_factory=dict)  # \name -> body
+    cites: dict[str, str] = field(default_factory=dict)  # number as printed -> \cite key
 
     @staticmethod
     def path_for(document: Path) -> Path:
@@ -71,6 +75,9 @@ class Sidecar:
         for m in root.iterfind("macros/macro"):
             if m.get("name"):
                 sc.macros[m.get("name", "")] = m.get("body", "")
+        for c in root.iterfind("cites/cite"):
+            if c.get("key") and c.get("number"):
+                sc.cites[c.get("number", "")] = c.get("key", "")
         return sc
 
     def save(self, path: Path) -> None:
@@ -94,6 +101,10 @@ class Sidecar:
                 if name in self.label_kinds:
                     attrs["kind"] = self.label_kinds[name]
                 ET.SubElement(ls, "label", attrs)
+        if self.cites:
+            cs = ET.SubElement(root, "cites")
+            for num, key in sorted(self.cites.items(), key=lambda kv: (len(kv[0]), kv[0])):
+                ET.SubElement(cs, "cite", {"key": key, "number": num})
         if self.macros:
             ms = ET.SubElement(root, "macros")
             for name, body in sorted(self.macros.items()):

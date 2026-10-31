@@ -60,7 +60,14 @@ local function number_of(tex, labels)
   local tag_star, tag = tex:match('\\tag(%*?)%s*(%b{})')
   if tag then
     tag = tag:sub(2, -2)
-    num = { pandoc.Str((tag_star == '*') and tag or ('(' .. tag .. ')')) }
+    local label = tex:match('\\label%s*(%b{})')
+    if label then  -- a marker Span too, so that the label keeps its bookmark (docx2tex)
+      num = pandoc.List({ pandoc.Str((tag_star == '*') and '' or '(') })
+      num:extend(t2d.number(tag, 'equation', label:sub(2, -2), nil))
+      num:insert(pandoc.Str((tag_star == '*') and '' or ')'))
+    else
+      num = { pandoc.Str((tag_star == '*') and tag or ('(' .. tag .. ')')) }
+    end
   elseif not (tex:find('\\notag%f[%A]') or tex:find('\\nonumber%f[%A]')) then
     local label = tex:match('\\label%s*(%b{})')
     if label then
@@ -140,18 +147,32 @@ end
 
 -- Bring display math to the top level: Emph[a, Math, b] -> Emph[a], Math, Emph[b].
 -- (pandoc wraps the body of plain-style theorems in Emph.)
+local function is_blank(inl)
+  return inl.t == 'Space' or inl.t == 'SoftBreak' or inl.t == 'LineBreak'
+end
+
+local function trim(inlines)
+  local a, b = 1, #inlines
+  while a <= b and is_blank(inlines[a]) do a = a + 1 end
+  while b >= a and is_blank(inlines[b]) do b = b - 1 end
+  local out = {}
+  for i = a, b do out[#out + 1] = inlines[i] end
+  return out
+end
+
 local function explode(inlines)
   local out = {}
   for _, x in ipairs(inlines) do
     if WRAPPERS[x.t] and has_display(x.content) then
       local buf = {}
       local function flush()
-        if #buf > 0 then
+        local t = trim(buf)  -- no space left hanging before/after the display formula
+        if #t > 0 then
           local w = x:clone()
-          w.content = buf
+          w.content = t
           out[#out + 1] = w
-          buf = {}
         end
+        buf = {}
       end
       for _, y in ipairs(explode(x.content)) do
         if y.t == 'Math' and y.mathtype == 'DisplayMath' then
@@ -166,19 +187,6 @@ local function explode(inlines)
       out[#out + 1] = x
     end
   end
-  return out
-end
-
-local function is_blank(inl)
-  return inl.t == 'Space' or inl.t == 'SoftBreak' or inl.t == 'LineBreak'
-end
-
-local function trim(inlines)
-  local a, b = 1, #inlines
-  while a <= b and is_blank(inlines[a]) do a = a + 1 end
-  while b >= a and is_blank(inlines[b]) do b = b - 1 end
-  local out = {}
-  for i = a, b do out[#out + 1] = inlines[i] end
   return out
 end
 

@@ -5,24 +5,30 @@
 
 | В docx (tex2docx) | В LaTeX (docx2tex) |
 |---|---|
-| Абзац стиля `Theorem`/`Definition`/`Remark`: начинается с `Strong`/`Emph` «Имя N.M» + «.», затем «(Заметка)» если был `[opt]` | `\begin{<env>}[Заметка] … \end{<env>}`; `<env>` по имени через `theorem_styles`/словарь имен («Теорема»→`theorem`, «Лемма»→`lemma`, «Следствие»→`corollary`, «Определение»→`definition`, «Замечание»→`remark`, «Пример»→`example`, «Утверждение»→`proposition`); номер отбрасывается |
-| Абзац стиля `Proof`: «Доказательство.» … «◻» (табулятор + знак) | `\begin{proof} … \end{proof}`, знак отбрасывается |
-| Абзац стиля `Equation`: `<tab> oMath <tab> (N)`; без номера — `<tab> oMath` | `\begin{equation}\label{…} … \end{equation}` / `\[ … \]`; несколько подряд с `&` в формуле → один `align` |
-| Закладка `t2d_<метка>` вокруг номера (режим `live_numbers`) | `\label{<метка>}` (обратная замена `_` → исходная метка хранится в `docProps/custom.xml`, см. ниже) |
-| Поле `REF t2d_<метка> \h` или гиперссылка `w:anchor=<метка>` с текстом-номером | `\ref{<метка>}`; в скобках — `\eqref` |
-| Заголовок `Heading N` с текстом «K Имя» или полем `SEQ hN` | `\section{Имя}` и т.д.; `\label{<метка>}` если есть закладка |
-| `Image Caption` «Рис. N. Текст» после картинки / `Table Caption` «Таблица N. Текст» перед таблицей | `figure`/`table` с `\centering`, `\includegraphics{images/…}`, `\caption{Текст}`, `\label` |
-| `Algorithm Caption` «**Алгоритм N.** Текст» + абзацы `Algorithm` («k:» tab×уровень строка) | `\begin{algorithm}\caption{Текст}\begin{algorithmic}[1] … ` с `\State`/`\If`/… по ключевым словам |
-| Абзацы `Bibliography` («1. Текст записи») и цитаты «[1, 2]» | `\begin{thebibliography}` с `\bibitem{bib:1}` и `\cite{bib:1,bib:2}` |
-| `Centered` / `Right Aligned` | `\begin{center}` / `\begin{flushright}` |
-| Неразрывные пробелы (`postprocess.nbsp`) | `~` только там, где LaTeX-автор поставил бы: после коротких слов и перед тире; остальное — пробел |
+| Абзац стиля `Theorem`/`Definition`/`Remark`: начинается с `Strong`/`Emph` «Имя N.M» + «.», затем «(Заметка).» если был `[opt]`; тело plain-теорем курсивом; закладка идентификатора Div охватывает все абзацы теоремы (ее формулы тоже) | `\begin{<env>}[Заметка]\label{…} … \end{<env>}`; `<env>` по имени через объявления спутника и словарь `theorem_envs` («Теорема»→`theorem`, «Лемма»→`lemma`, «Следствие»→`corollary`, «Определение»→`definition`, «Замечание»→`remark`, «Пример»→`example`, «Утверждение»→`proposition`, «Гипотеза»→`conjecture`); номер отбрасывается, курсив снимается; абзацы до конца закладки остаются внутри окружения |
+| Абзац стиля `Proof`: «Доказательство.» курсивом … «◻» (табулятор + знак) | `\begin{proof} … \end{proof}`, знак отбрасывается |
+| Абзац стиля `Equation`: `<tab> oMath <tab> (N)`; без номера — `<tab> oMath`; `\tag{A}` → «(A)», `\tag*{B}` → «B»; строка `align` — формула-матрица с `&`; `subequations` — «(2.5a)», «(2.5b)» | `\begin{equation}\label{…} … \end{equation}` / `\[ … \]`; несколько подряд с `&` → один `align` (`\notag` без номера); `\tag`/`\tag*`; «(2.5a)»… → `subequations` (метка группы — из ссылки «(2.5)», если есть); несколько строк под одним номером → `aligned` в `equation` (с `&`) или `multline` |
+| Закладка `t2d_<метка>` вокруг номера — всегда, не только в режиме `live_numbers` (кроме автометок `t2d:auto:N`) | `\label{<метка>}` по спутнику («закладка → метка»); без спутника — `t2d_` отбрасывается с предупреждением `label.unmapped` |
+| Поле `REF t2d_<метка> \h` или гиперссылка `w:anchor=<метка>` с текстом-номером | `\ref{<метка>}`; текст «(N)» — `\eqref` |
+| Заголовок `Heading N` с текстом «K Имя» или полем `SEQ hN` | `\section{Имя}` и т.д.; `\label{<метка>}` если есть закладка; без номера среди нумерованных — `\section*` |
+| `Captioned Figure` + `Image Caption` «Рис. N. Текст» / `Table Caption` «Таблица N. Текст» перед таблицей | `figure`/`table` с `\centering`, `\includegraphics{images/…}`, `\caption{Текст}`, `\label` |
+| `Algorithm Caption` «**Алгоритм N.** Текст» + абзацы `Algorithm` («k:» tab×(уровень+1) строка; ключевые слова полужирным, имена функций капителью) | `\begin{algorithm}[H]\caption{Текст}\label{…}\begin{algorithmic}[1] … ` с `\State`/`\If`/`\For`/`\While`/`\Function`/`\Return`/`\Require`; `end …` → `\EndIf`…; без строк `end` ([noend]) блоки закрываются по отступу |
+| Заголовок «Список литературы» + нумерованный список (`thebibliography`); цитаты «[1, 2]», «[2, гл. 2]» | `\begin{thebibliography}` с `\bibitem{<ключ>}` и `\cite[гл.~2]{<ключ>}`; ключи — из спутника (`<cites>`), иначе `bib:N`; абзацы стиля `Bibliography` «1. Текст» принимаются так же |
+| `Centered` / `Right Aligned` / `Left Aligned`; `Abstract` | `center` / `flushright` / `flushleft`; `abstract` |
+| `Title` / `Author` / `Date` (от `\maketitle`) | `\maketitle` с закомментированными `% \title{…}` / `% \author{…}` (объявляет основной документ; `--standalone` их раскомментирует) |
+| Неразрывные пробелы (`postprocess.nbsp`) | `~` |
+
+Как docx2tex это читает: `stages/prepare.py` делает рабочую копию docx, где закладки
+(U+E000 имя U+E001 в начале, U+E003 имя U+E001 в конце охвата), поля `REF` (гиперссылки) и
+табуляторы (U+E002) записаны в текст — pandoc их иначе теряет; `filters/structures.lua`
+снимает маркеры и собирает окружения.
 
 ## Метаданные круга
 
-Чтобы круг сходился без догадок, tex2docx с версии M4 пишет в `docProps/custom.xml` свойство
-`t2d.labels` — JSON «имя закладки → исходная метка», `t2d.theorems` — объявления `\newtheorem`
-документа, `t2d.source` — имя исходного `.tex`. docx2tex читает их, если есть; без них работает
-по таблице выше (документ, набранный в Word).
+Чтобы круг сходился без догадок, tex2docx пишет рядом с docx документ-спутник `<имя>.t2d.xml`
+(ADR 0008): «имя закладки → исходная метка», объявления `\newtheorem`, имена подписей,
+«номер → ключ цитаты», язык. docx2tex читает его, если есть; без него работает по таблице выше
+(документ, набранный в Word). Копия внутри docx (`docProps/custom.xml`) — пункт M0, еще не сделан.
 
 ## Тест круга
 

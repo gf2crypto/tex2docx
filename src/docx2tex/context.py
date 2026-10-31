@@ -18,6 +18,7 @@ class Context:
     workdir: Path
     config: Config
     standalone: bool = False
+    prepared: Path | None = None  # working copy of the docx with markers (stages/extract.py)
     report: Report = field(default_factory=Report)
     sidecar: Sidecar = field(default_factory=Sidecar)
     language: str = "english"

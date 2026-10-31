@@ -5,7 +5,6 @@ Checks, per docs/docx2tex/roundtrip-contract.md:
    has the same labels with the same numbers;
 2. tex2docx over that .tex gives a docx whose probe equals the first one;
 3. a third round changes nothing (idempotent).
-Skipped until docx2tex exists.
 """
 
 from __future__ import annotations
@@ -40,7 +39,6 @@ def with_body(main_tex: str, body: str) -> str:
 
 @needs_all
 @pytest.mark.e2e
-@pytest.mark.xfail(reason="docx2tex M1 (structures) and M3 (round trip) not done yet", strict=False)
 @pytest.mark.parametrize("case", CASES)
 def test_roundtrip(case: str, tmp_path: Path):
     from docx2tex.pipeline import convert as docx_to_tex

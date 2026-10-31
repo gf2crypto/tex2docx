@@ -1,0 +1,25 @@
+# Глава, набранная в Word по шаблону tex2docx (стили есть, закладок и файла-спутника нет).
+tex_contains:
+  - "\\section{Глава из Word}"            # номер заголовка отброшен
+  - "\\begin{theorem}\nДля любого $x^{2}$ утверждение верно."
+  - "\\begin{equation}\n  \\sum_{i = 1}^{n}x_{i}\n\\end{equation}"
+  - "\\begin{proof}\nСледует из (2.1) и \\cite{bib:1}.\n\\end{proof}"   # знака конца нет
+  - "\\caption{Поиск}"
+  - "\\For{всех}"
+  - "\\If{найдено}"
+  - "\\State \\Return истина"
+  - "\\EndIf"                             # закрыто по отступу (в Word строк end нет)
+  - "\\EndFor"
+  - "\\cite{bib:1,bib:2}"
+  - "\\begin{thebibliography}{9}"
+  - "\\bibitem{bib:1} Первый источник."
+tex_not_contains:
+  - "◻"
+  - "Список литературы"                   # заголовок делает thebibliography
+  - "\\usepackage"
+compiles: true
+packages: [amsthm, algorithm, algpseudocode]
+report_absent:
+  - internal-error
+  - theorem.no-head
+  - theorem.unknown-name

@@ -2,7 +2,8 @@
 
 Status: implemented (M0): bookmarks (name -> plain text inside), simple fields
 (w:instr), the sidecar <name>.t2d.xml next to the docx, document language
-(sidecar, config, else guessed from the text).
+(sidecar, config, else guessed from the text). M1: the working copy
+workdir/prepared.docx with markers for pandoc (stages/prepare.py).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from tex2docx.texscan import document_language
 
 from ..context import Context
 from . import StageError
+from .prepare import prepare_docx
 
 STAGE = "extract"
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -68,5 +70,10 @@ def run(ctx: Context) -> None:
     n_bm = sum(1 for b in ctx.bookmarks if b.startswith("t2d_"))
     if n_bm:
         ctx.report.info(STAGE, "extract.t2d-bookmarks", str(n_bm))
+    ctx.workdir.mkdir(parents=True, exist_ok=True)
+    ctx.prepared = ctx.workdir / "prepared.docx"
+    marked = prepare_docx(ctx.source, ctx.prepared)
+    if marked:
+        ctx.report.info(STAGE, "extract.bookmarks", str(marked))
     if re.search(r"[Ѐ-ӿ]", plain) and ctx.language == "english":
         ctx.report.info(STAGE, "extract.cyrillic-but-english", "")

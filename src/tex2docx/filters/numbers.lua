@@ -1,6 +1,7 @@
 -- Marker Spans (t2d.number / t2d.ref) -> text, or Word fields with live_numbers (ADR 0006).
 -- Status: implemented (M3). Runs last, walking the document in order so that every
 -- number knows the nearest heading above it.
+-- Plain mode: a number is text inside a bookmark named after the label (t2d_<label>);
 -- Live mode: a number is a SEQ field inside a bookmark named after the label;
 --   "2.1" within sections is REF(section bookmark) "." SEQ counter \s <section level>;
 --   headings: level 1 -> SEQ h1, deeper -> REF(parent heading) "." SEQ hN \s N-1.
@@ -83,9 +84,21 @@ function Pandoc(doc)
     return { pandoc.RawInline('openxml', fld('REF ' .. bookmark_name(label) .. ' \\h', num)) }
   end
 
+  -- Plain mode: the number stays text, but a bookmark named after the label still
+  -- surrounds it, so that docx2tex can give the object its \label back (ADR 0008).
+  local function marked_number(span)
+    local label = span.attributes.label
+    if label == '' or label:match('^t2d:auto:') then return plain(span) end
+    bookmark_id = bookmark_id + 1
+    local name = bookmark_name(label)
+    return { pandoc.RawInline('openxml', '<w:bookmarkStart w:id="' .. bookmark_id .. '" w:name="' .. name .. '"/>'),
+             pandoc.Str(pandoc.utils.stringify(span)),
+             pandoc.RawInline('openxml', '<w:bookmarkEnd w:id="' .. bookmark_id .. '"/>') }
+  end
+
   local function convert(span)
     if span.classes:includes('t2d-num') then
-      return live and field_number(span) or plain(span)
+      return live and field_number(span) or marked_number(span)
     elseif span.classes:includes('t2d-ref') then
       return live and field_ref(span) or plain(span)
     end

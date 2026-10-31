@@ -7,19 +7,21 @@
 ## Поток данных
 
 ```
-chapter.docx ─► extract ─► pandoc ─► structures ─► normalize ─► emit ─► chapter.tex (+ images/)
-                 │ xml,     │ latex   │ theorem/    │ типограф.   │ фрагмент │
-                 │ закладки,│ (AST)   │ equation/   │ Word→TeX    │ или      ▼
-                 │ поля,    │         │ figure/     │             │ документ  chapter.report.{md,json}
-                 ▼ картинки ▼         ▼ algorithm   ▼             ▼
-            ctx.doc_xml  ctx.ast   ctx.ast        ctx.ast     ctx.tex ──► check (latexmk, если --standalone)
+chapter.docx ─► extract ─► pandoc (+ structures.lua) ─► normalize ─► emit ─► chapter.tex (+ images/)
+                 │ xml,       │ docx → latex с фильтром:    │ типограф.  │ фрагмент │
+                 │ закладки,  │ theorem/equation/figure/    │ Word→TeX   │ или      ▼
+                 │ спутник,   │ algorithm/thebibliography,  │            │ документ  chapter.report.{md,json}
+                 ▼ prepared   ▼ ссылки, заголовки           ▼            ▼
+            ctx.bookmarks  ctx.tex                       ctx.tex     chapter.t2d.xml ──► check (latexmk, --standalone)
 ```
+
+Как сделано (M0–M1): этапы — `src/docx2tex/stages/*.py`, фильтр — `src/docx2tex/filters/structures.lua`.
 
 | Этап | Что делает | Откуда берет истину |
 |---|---|---|
-| extract | распаковка docx; `word/document.xml`, `styles.xml`, `numbering.xml`; закладки `t2d_*`, поля `SEQ`/`REF`, гиперссылки на закладки; картинки в `images/` | XML docx (pandoc закладки и поля выбрасывает) |
-| pandoc | `pandoc -f docx+styles -t json`; формулы OMML → LaTeX (texmath) | pandoc |
-| structures | Lua-фильтры: `Div custom-style=Theorem` → `theorem`; абзац `Equation` → `equation`/`align`; подписи → `figure`/`table`; `Algorithm` → `algorithmic`; `Bibliography` → `thebibliography`; заголовки без номеров; ссылки по закладкам → `\ref` | стили и закладки, положенные tex2docx (контракт круга) |
+| extract | `word/document.xml`: закладки, поля; спутник `<имя>.t2d.xml`; язык; рабочая копия `workdir/prepared.docx` (`stages/prepare.py`): закладки, поля `REF`/`SEQ` и табуляторы записаны в текст маркерами U+E000…U+E003, потому что pandoc их выбрасывает | XML docx |
+| pandoc | `pandoc -f docx+styles -t latex --extract-media --lua-filter structures.lua`; формулы OMML → LaTeX (texmath); данные для фильтра — JSON `d2t-meta` (метки спутника и их хеши pandoc 3.12, объявления теорем, словарь имен, ключи цитат) | pandoc |
+| structures (фильтр) | маркеры → метки; `Div` стилей `Theorem`/… → `theorem`; абзацы `Equation` → `equation`/`align`/`subequations`; подписи → `figure`/`table`; `Algorithm` → `algorithmic`; библиография → `thebibliography`, «[1]» → `\cite`; заголовки без номеров с `\label`; ссылки на закладки → `\ref`/`\eqref`; `\maketitle` | стили и закладки, положенные tex2docx (контракт круга) |
 | normalize | типографика Word → TeX, чистка мусора Word (пустые абзацы, двойные пробелы, `\\` вместо абзацев), экранирование `% & # _` в тексте | таблица замен, та же, что `stages/normalize.py` tex2docx, в обратную сторону |
 | emit | `pandoc -t latex` из AST + свои writer-правила; фрагмент без преамбулы, список нужных пакетов и `\newtheorem` — в отчет; `--standalone` — полный документ | — |
 | check | `--standalone` компилируется `latexmk`; ошибки → отчет без текста; `.aux` сравнивается с ожиданиями (в тестах) | LaTeX |

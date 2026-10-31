@@ -24,6 +24,9 @@ RULES: list[tuple[str, str]] = [
     (r"\\texorpdfstring\{([^{}]*)\}\{[^{}]*\}", r"\1"),
     (r"\\\((.+?)\\\)", r"$\1$"),
     (r"\u00a0", "~"),
+    # our own environments: no blank line right after \\begin{...} and before \\end{...}
+    (r"(\\begin\{[a-z*]+\}(?:\[[^\]\n]*\])?(?:\\label\{[^}]*\})*)\n\n", r"\1\n"),
+    (r"\n\n(\\end\{[a-z*]+\})", r"\n\1"),
     (r"[ \t]+\n", "\n"),
     (r"\n{3,}", "\n\n"),
 ]

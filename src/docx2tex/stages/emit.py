@@ -45,7 +45,9 @@ def standalone(ctx: Context) -> str:
     head = ["\\documentclass[12pt]{article}"] + ["\\usepackage" + p for p in pkgs]
     for env, title in sorted(ctx.theorem_envs_used.items()):
         head.append(f"\\newtheorem{{{env}}}{{{title}}}")
-    return "\n".join(head) + "\n\\begin{document}\n" + ctx.tex + "\\end{document}\n"
+    # the title block is commented out in the fragment (the main document has its own)
+    body = re.sub(r"^% (\\(?:title|author|date)\{)", r"\1", ctx.tex, flags=re.M)
+    return "\n".join(head) + "\n\\begin{document}\n" + body + "\\end{document}\n"
 
 
 def run(ctx: Context) -> None:

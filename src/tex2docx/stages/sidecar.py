@@ -39,6 +39,7 @@ def run(ctx: Context) -> None:
         if lab.cref_type:
             sc.label_kinds[name] = lab.cref_type
     sc.macros = dict(ctx.config.macros)
+    sc.cites = {num: key for key, num in ctx.bibcites.items()}
     path = Sidecar.path_for(ctx.output)
     sc.save(path)
     ctx.report.info(STAGE, "sidecar.written", path.name)
