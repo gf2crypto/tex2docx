@@ -11,7 +11,7 @@ import re
 from dataclasses import asdict
 
 from ..context import Context
-from ..sidecar import Sidecar
+from ..sidecar import Sidecar, embed
 from ..stages.pandoc_run import caption_names
 from ..texscan import document_language
 
@@ -43,3 +43,6 @@ def run(ctx: Context) -> None:
     path = Sidecar.path_for(ctx.output)
     sc.save(path)
     ctx.report.info(STAGE, "sidecar.written", path.name)
+    if ctx.output.is_file():
+        part = embed(ctx.output, sc)
+        ctx.report.info(STAGE, "sidecar.embedded", part)

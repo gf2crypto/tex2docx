@@ -35,7 +35,8 @@
       `images/`; `--standalone` пишет документ с преамбулой, `check` собирает его `latexmk`.
 - [x] Корпус `tests/docx2tex/corpus/` (docx строятся `make.py`), кейс `word-basic` зеленый;
       тест круга `tests/roundtrip/` работает и ожидаемо падает до M1.
-- [ ] Документ-спутник внутри docx (`docProps/custom.xml`), чтобы переживал переименование файла.
+- [x] Копия спутника внутри docx — custom XML part `customXml/itemN.xml` (не `docProps/custom.xml`:
+      строковое свойство Word обрезает до 255 знаков); docx2tex берет ее, когда файла рядом нет.
 
 ## M1 — структуры tex2docx узнаются обратно (готово)
 

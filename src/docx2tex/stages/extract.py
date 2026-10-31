@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 import zipfile
 
-from tex2docx.sidecar import Sidecar
+from tex2docx.sidecar import Sidecar, read_embedded
 from tex2docx.texscan import document_language
 
 from ..context import Context
@@ -59,6 +59,11 @@ def run(ctx: Context) -> None:
     if sc is not None:
         ctx.sidecar = sc
         ctx.report.info(STAGE, "sidecar.read", Sidecar.path_for(ctx.source).name)
+    else:
+        sc = read_embedded(ctx.source)
+        if sc is not None:
+            ctx.sidecar = sc
+            ctx.report.info(STAGE, "sidecar.read", "customXml")
     if ctx.config.language:
         ctx.language = ctx.config.language
     elif ctx.sidecar.language:

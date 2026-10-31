@@ -74,3 +74,24 @@ def test_roundtrip(case: str, tmp_path: Path):
     docx_to_tex(b_docx, b_tex)
     assert b_tex.read_text(encoding="utf-8") == a_tex.read_text(encoding="utf-8"), \
         f"{case}: the fragment keeps changing between rounds"
+
+
+@needs_all
+@pytest.mark.e2e
+def test_sidecar_inside_the_docx_is_enough(tmp_path: Path):
+    """The companion file may get lost (docx mailed, renamed): the copy inside the docx
+    (customXml) still gives the labels back."""
+    from docx2tex.pipeline import convert as docx_to_tex
+
+    work = tmp_path / "basic"
+    shutil.copytree(CORPUS / "basic", work)
+    a_docx = work / "a.docx"
+    tex_to_docx(work / "main.tex", a_docx)
+    (work / "a.t2d.xml").unlink()
+    renamed = work / "chapter.docx"
+    a_docx.rename(renamed)
+    docx_to_tex(renamed, work / "chapter.tex")
+    tex = (work / "chapter.tex").read_text(encoding="utf-8")
+    assert "\\begin{equation}\\label{eq:square}" in tex
+    assert "\\eqref{eq:square}" in tex
+    assert "label.unmapped" not in (work / "chapter.report.md").read_text(encoding="utf-8")

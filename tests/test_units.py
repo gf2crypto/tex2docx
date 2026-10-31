@@ -451,3 +451,28 @@ def test_sidecar_round_trips_through_xml(tmp_path):
     back = Sidecar.load(path)
     assert back == sc
     assert "<cite key=\"knuth\" number=\"1\" />" in path.read_text(encoding="utf-8")
+
+
+def test_sidecar_embedded_in_docx_survives_without_the_file(tmp_path):
+    import shutil
+    import zipfile
+
+    from tex2docx.sidecar import Sidecar, embed, read_embedded
+
+    docx = tmp_path / "a.docx"
+    shutil.copyfile(Path(__file__).parents[1] / "src" / "tex2docx" / "data" / "reference.docx", docx)
+    sc = Sidecar(source="main.tex", labels={"t2d_eq_a": "eq:a"}, cites={"1": "knuth"})
+    part = embed(docx, sc)
+    assert part == "customXml/item1.xml"
+    assert read_embedded(docx) == sc
+    with zipfile.ZipFile(docx) as z:
+        names = z.namelist()
+        assert "customXml/itemProps1.xml" in names and "customXml/_rels/item1.xml.rels" in names
+        assert "/customXml/itemProps1.xml" in z.read("[Content_Types].xml").decode()
+        assert "../customXml/item1.xml" in z.read("word/_rels/document.xml.rels").decode()
+    # embedding again replaces the part instead of adding a second one
+    sc.cites["2"] = "lamport"
+    assert embed(docx, sc) == part
+    assert read_embedded(docx).cites == {"1": "knuth", "2": "lamport"}
+    with zipfile.ZipFile(docx) as z:
+        assert sum(1 for n in z.namelist() if n.startswith("customXml/item")) == 2
