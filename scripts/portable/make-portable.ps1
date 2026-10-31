@@ -5,7 +5,7 @@
 #   texlive\  — сюда отдельно ставится TeX Live с ключом -portable (см. docs/windows-portable.md)
 #   tex2docx.bat, docx2tex.bat — запуск
 # Запускать на компьютере с интернетом из корня репозитория (PowerShell 5+):
-#   .\scripts\portable\make-portable.ps1 -PythonVersion 3.12.7 -PandocZip pandoc-3.x-windows-x86_64.zip -PopplerZip Release-xx.yy.z-0.zip
+#   .\scripts\portable\make-portable.ps1 -PythonVersion 3.12.7 -PandocZip pandoc-3.x-windows-x86_64.zip -PopplerZip Release-xx.yy.z-0.zip [-Out C:\soft\tex2docx-portable]
 param(
     [string]$PythonVersion = "3.12.7",
     [Parameter(Mandatory = $true)][string]$PandocZip,
@@ -14,7 +14,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$out = Join-Path (Get-Location) $Out
+$out = if ([System.IO.Path]::IsPathRooted($Out)) { $Out } else { Join-Path (Get-Location) $Out }
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
 # 1. Python embeddable
