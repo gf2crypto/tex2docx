@@ -20,12 +20,14 @@ images = ["Pillow>=10"]  # BMP/TIFF/GIF pictures -> PNG (otherwise ImageMagick i
 
 [project.scripts]
 tex2docx = "tex2docx.cli:main"
+docx2tex = "docx2tex.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-tex2docx = ["filters/*.lua", "data/*"]
+tex2docx = ["filters/*.lua", "data/*", "data/*/*"]
+docx2tex = ["filters/*.lua"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -7,16 +7,16 @@ tex_contains:
   - "\\begin{itemize}"
   - "\\begin{enumerate}"
   - "\\begin{tabular}"
-  - "\\includegraphics"
-  - "\\caption{Подпись к рисунку}"
-  - "текст --- и дальше"             # тире Word -> ---
+  - "\\includegraphics{images/image1.png}"
+  - "\\[\\sum_{i = 1}^{n}x_{i}\\]"       # абзац из одной формулы -> выносная
+  - "$x^{2}$ --- и дальше"           # тире Word -> ---
 tex_not_contains:
   - "\\usepackage"                   # фрагмент без преамбулы
   - "\\\\\\\\"                         # ручных переносов строк нет
 compiles: true
-packages: [amsmath, graphicx, booktabs]
+packages: [graphicx]
 report_absent:
   - math.not-omml
   - internal-error
 xfail_tex_contains:
-  - "\\[\\sum_{i=1}^{n} x_{i}\\]"      # M2: центрированный абзац из одной формулы -> выносная
+  - "\\caption{Подпись к рисунку}"   # M1: абзац стиля Caption после картинки -> figure

@@ -60,3 +60,23 @@ def test_strict(converted):
     for pkg in expect.get("packages", []):
         assert any(i["code"] == "emit.package" and i["detail"] == pkg for i in report), \
             f"{case}: package {pkg} not required by the report"
+
+
+def _xfail_items():
+    for case in CASES:
+        expect = yaml.safe_load((CORPUS / case / "expect.yaml").read_text(encoding="utf-8")) or {}
+        for s in expect.get("xfail_tex_contains", []):
+            yield pytest.param(case, s, id=f"{case}-{s!r}")
+
+
+@pytest.mark.e2e
+@needs_tools
+@needs_docx2tex
+@pytest.mark.xfail(reason="planned, see docs/docx2tex/roadmap.md", strict=False)
+@pytest.mark.parametrize("case,item", list(_xfail_items()))
+def test_planned(case, item, tmp_path):
+    from docx2tex.pipeline import convert
+
+    out = tmp_path / f"{case}.tex"
+    convert(build_input(case), out)
+    assert item in out.read_text(encoding="utf-8")

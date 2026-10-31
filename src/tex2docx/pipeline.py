@@ -23,6 +23,7 @@ from .stages import (
     normalize,
     pandoc_run,
     postprocess,
+    sidecar,
     theorems,
 )
 
@@ -45,6 +46,7 @@ STAGES: list[Stage] = [
     Stage("figures", figures.run, fatal=False),
     Stage("pandoc", pandoc_run.run, fatal=True),
     Stage("postprocess", postprocess.run, fatal=True),
+    Stage("sidecar", sidecar.run, fatal=False),
 ]
 
 

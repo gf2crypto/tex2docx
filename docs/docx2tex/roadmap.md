@@ -20,22 +20,22 @@
 или правил docx, полученный от tex2docx). Нужно с минимальными усилиями получить
 `chapter.tex`, который `\input` в отчет, и чтобы он собрался с первого раза.
 
-## M0 — каркас
+## M0 — каркас (готово)
 
-- [ ] Пакет `src/docx2tex/`, CLI `docx2tex chapter.docx [-o chapter.tex] [--standalone]`,
+- [x] Пакет `src/docx2tex/`, CLI `docx2tex chapter.docx [-o chapter.tex] [--standalone]`,
       тот же конвейер этапов над `Context`, тот же отчет без текста документа
-      (`chapter.report.md`), общие с tex2docx `report.py` и правила `CLAUDE.md`.
-- [ ] Этап `extract`: распаковка docx, `word/document.xml`, стили, картинки, закладки и поля
-      (pandoc их теряет — читаем сами, см. `architecture.md`).
-- [ ] Этап `pandoc`: `pandoc -f docx+styles -t latex` с фильтрами; формулы OMML → LaTeX
-      средствами texmath.
-- [ ] Этап `normalize`: типографика Word → TeX: `—` → `---`, `«»` остаются (UTF-8), неразрывный
-      пробел → `~`, `…` → `\dots`, двойные пробелы, пустые абзацы, ручные переносы строк.
-- [ ] Этап `emit`: фрагмент (по умолчанию) или полный документ (`--standalone`: преамбула
-      с `inputenc`/`fontenc`/`babel` и нужными пакетами); компиляция `--standalone`-варианта
-      как самопроверка (`latexmk`), ошибки — в отчет.
-- [ ] Корпус `tests/docx2tex/corpus/` (синтетические docx, см. README) и сквозной тест:
-      фрагмент вставляется в эталонный `main.tex` и собирается.
+      (`chapter.report.md`), общие с tex2docx `report.py`, `tools.py` и правила `CLAUDE.md`.
+- [x] Этап `extract`: закладки и поля из `word/document.xml` (pandoc их теряет), документ-спутник
+      `<имя>.t2d.xml` (ADR 0008), язык (спутник → конфиг → по тексту).
+- [x] Этап `pandoc`: `pandoc -f docx+styles -t latex --extract-media` с фильтром `structures.lua`
+      (заголовки без `\hypertarget` и номеров, абзац из одной формулы — выносная, списки без
+      обертки стилей, простые таблицы — `tabular`); формулы OMML → LaTeX средствами texmath.
+- [x] Этап `normalize`: `\(…\)` → `$…$`, мусор pandoc, пути картинок, `~`; идемпотентен.
+- [x] Этап `emit`: фрагмент без преамбулы, нужные пакеты — `emit.package` в отчете, картинки в
+      `images/`; `--standalone` пишет документ с преамбулой, `check` собирает его `latexmk`.
+- [x] Корпус `tests/docx2tex/corpus/` (docx строятся `make.py`), кейс `word-basic` зеленый;
+      тест круга `tests/roundtrip/` работает и ожидаемо падает до M1.
+- [ ] Документ-спутник внутри docx (`docProps/custom.xml`), чтобы переживал переименование файла.
 
 ## M1 — структуры tex2docx узнаются обратно
 

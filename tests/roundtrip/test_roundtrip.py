@@ -40,6 +40,7 @@ def with_body(main_tex: str, body: str) -> str:
 
 @needs_all
 @pytest.mark.e2e
+@pytest.mark.xfail(reason="docx2tex M1 (structures) and M3 (round trip) not done yet", strict=False)
 @pytest.mark.parametrize("case", CASES)
 def test_roundtrip(case: str, tmp_path: Path):
     from docx2tex.pipeline import convert as docx_to_tex

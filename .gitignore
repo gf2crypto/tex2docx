@@ -11,6 +11,7 @@ dist/
 !src/tex2docx/data/reference*.docx
 *.report.md
 *.report.json
+*.t2d.xml
 _t2d_work/
 
 # TeX
