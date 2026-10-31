@@ -95,3 +95,24 @@ def test_sidecar_inside_the_docx_is_enough(tmp_path: Path):
     assert "\\begin{equation}\\label{eq:square}" in tex
     assert "\\eqref{eq:square}" in tex
     assert "label.unmapped" not in (work / "chapter.report.md").read_text(encoding="utf-8")
+
+
+@needs_all
+@pytest.mark.e2e
+def test_into_main_document_with_bib(tmp_path: Path):
+    """--into main.tex: citations get the keys of the main document's .bib by the text of
+    the reference list, the list itself is dropped (the main document prints it), and the
+    report says what the preamble lacks and how to \\input the fragment."""
+    from docx2tex.pipeline import convert as docx_to_tex
+
+    work = tmp_path / "bibliography"
+    shutil.copytree(CORPUS / "bibliography", work)
+    tex_to_docx(work / "main.tex", work / "chapter.docx")
+    (work / "chapter.t2d.xml").unlink()  # the list is matched by text, not by the sidecar
+    docx_to_tex(work / "chapter.docx", work / "chapter.tex", into=work / "main.tex")
+    tex = (work / "chapter.tex").read_text(encoding="utf-8")
+    assert "\\cite{knuth2000,lamport1978}" in tex
+    assert "thebibliography" not in tex and "bib:1" not in tex
+    report = (work / "chapter.report.md").read_text(encoding="utf-8")
+    assert "bib.matched" in report and "into.input" in report
+    assert "into.missing" not in report

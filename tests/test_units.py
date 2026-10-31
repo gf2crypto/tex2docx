@@ -495,3 +495,41 @@ def test_simple_macros_and_fold_back():
     assert out == r"$\F_q^n$, $\mathbf{G}x$, $\rank\mathbf{G}$, \F{}x"  # {} keeps the letter apart
     assert n == 3
     assert sorted(ambiguous) == ["\\matr", "\\vect"]  # two names, one body: left alone
+
+
+# --- docx2tex --into: the main document and its .bib (M3) ----------------------
+
+def test_bib_parse_and_match():
+    from docx2tex.bibtex import match_entry, parse_bib
+
+    entries = parse_bib(r"""
+    @book{knuth2000, author = {Кнут, Дональд}, title = {Искусство программирования}, year = {2000}}
+    @article{lamport1978, author = "Lamport, Leslie and Other, A.", title = {Time, clocks, and the
+      ordering of events in a distributed system}, year = 1978, pages = {558--565}}
+    @comment{ignored}
+    """)
+    assert [e.key for e in entries] == ["knuth2000", "lamport1978"]
+    assert entries[1].surname == "Lamport" and entries[1].year == "1978"
+    assert match_entry("Кнут Д. Искусство программирования. М.: Вильямс, 2000.", entries).key == "knuth2000"
+    assert match_entry("Lamport L. Time, clocks and the ordering... 1978", entries).key == "lamport1978"
+    assert match_entry("Lamport L. Something else // Comm. ACM. 1978.", entries).key == "lamport1978"
+    assert match_entry("Иванов И. Неизвестная работа. 2010.", entries) is None
+
+
+def test_read_main_document(tmp_path):
+    from docx2tex.maindoc import read_main
+
+    (tmp_path / "refs.bib").write_text("@misc{a1, title={Alpha beta gamma}, year={2001}}", encoding="utf-8")
+    main = tmp_path / "main.tex"
+    main.write_text(r"""\documentclass{article}
+\usepackage[T2A]{fontenc}\usepackage[utf8]{inputenc}\usepackage[russian]{babel}
+\usepackage{amsmath,amsthm}
+\newtheorem{claim}{Утверждение}[section]
+\newcommand{\F}{\mathbb{F}}
+\begin{document}\bibliography{refs}\end{document}""", encoding="utf-8")
+    md = read_main(main)
+    assert md.theorems["claim"]["title"] == "Утверждение" and md.theorems["claim"]["within"] == "section"
+    assert md.macros == {"\\F": "\\mathbb{F}"}
+    assert {"amsmath", "amsthm", "babel"} <= md.packages
+    assert md.language == "russian"
+    assert [e.key for e in md.bib_entries] == ["a1"]

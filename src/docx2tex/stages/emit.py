@@ -94,6 +94,19 @@ def run(ctx: Context) -> None:
         ctx.report.info(STAGE, "emit.package", p)
     for env, title in ctx.theorem_envs_used.items():
         ctx.report.info(STAGE, "emit.newtheorem", f"{env}:{title}")
+    md = ctx.main_doc
+    if md is not None:  # --into: what the main document's preamble still lacks
+        for p in ctx.packages:
+            if p not in md.packages and not (p == "amsthm" and "amsthm" in md.text):
+                ctx.report.warn(STAGE, "into.missing-package", p)
+        for env, title in ctx.theorem_envs_used.items():
+            if env not in md.theorems:
+                ctx.report.warn(STAGE, "into.missing-theorem", f"{env}:{title}")
+        try:
+            rel = ctx.output.relative_to(md.path.parent).with_suffix("").as_posix()
+        except ValueError:
+            rel = ctx.output.with_suffix("").as_posix()
+        ctx.report.info(STAGE, "into.input", f"\\input{{{rel}}}")
     ctx.output.parent.mkdir(parents=True, exist_ok=True)
     ctx.output.write_text(ctx.tex, encoding="utf-8")
     media = ctx.workdir / "media"

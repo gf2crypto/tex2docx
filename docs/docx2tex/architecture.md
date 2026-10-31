@@ -20,10 +20,13 @@ chapter.docx ─► extract ─► pandoc (+ structures.lua) ─► normalize �
 | Этап | Что делает | Откуда берет истину |
 |---|---|---|
 | extract | `word/document.xml`: закладки, поля; спутник `<имя>.t2d.xml`; язык; рабочая копия `workdir/prepared.docx` (`stages/prepare.py`): закладки, поля `REF`/`SEQ` и табуляторы записаны в текст маркерами U+E000…U+E003, потому что pandoc их выбрасывает | XML docx |
+| maindoc | `--into main.tex`: объявления теорем, простые макросы, язык, `.bib` основного документа (только чтение) | основной документ |
 | pandoc | `pandoc -f docx+styles -t latex --extract-media --lua-filter structures.lua`; формулы OMML → LaTeX (texmath); данные для фильтра — JSON `d2t-meta` (метки спутника и их хеши pandoc 3.12, объявления теорем, словарь имен, ключи цитат) | pandoc |
 | structures (фильтр) | маркеры → метки; `Div` стилей `Theorem`/… → `theorem`; абзацы `Equation` → `equation`/`align`/`subequations`; подписи → `figure`/`table`; `Algorithm` → `algorithmic`; библиография → `thebibliography`, «[1]» → `\cite`; заголовки без номеров с `\label`; ссылки на закладки → `\ref`/`\eqref`; `\maketitle` | стили и закладки, положенные tex2docx (контракт круга) |
 | normalize | типографика Word → TeX, чистка мусора Word (пустые абзацы, двойные пробелы, `\\` вместо абзацев), экранирование `% & # _` в тексте | таблица замен, та же, что `stages/normalize.py` tex2docx, в обратную сторону |
-| emit | `pandoc -t latex` из AST + свои writer-правила; фрагмент без преамбулы, список нужных пакетов и `\newtheorem` — в отчет; `--standalone` — полный документ | — |
+| bibmatch | `--into` + `.bib`: записи списка литературы по тексту → ключи `\cite`, список убирается | `.bib` основного документа |
+| bibmatch | `--into` + `.bib`: записи списка литературы по тексту → ключи `\cite`, список убирается | `.bib` основного документа |
+| emit | фрагмент без преамбулы, картинки в `images/` (BMP/TIFF → PNG, EMF → PDF через LibreOffice); список нужных пакетов и `\newtheorem` — в отчет, с `--into` — чего не хватает в преамбуле и `\input{…}`; `--standalone` — полный документ | — |
 | check | `--standalone` компилируется `latexmk`; ошибки → отчет без текста; `.aux` сравнивается с ожиданиями (в тестах) | LaTeX |
 
 Все промежуточные файлы — в `ctx.workdir`; исходный docx не меняется.

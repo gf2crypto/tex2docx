@@ -14,7 +14,7 @@ from tex2docx.sidecar import Sidecar
 
 from .config import Config
 from .context import Context
-from .stages import StageError, check, emit, extract, normalize, pandoc_run
+from .stages import StageError, bibmatch, check, emit, extract, maindoc, normalize, pandoc_run
 
 
 @dataclass(frozen=True)
@@ -26,21 +26,24 @@ class Stage:
 
 STAGES: list[Stage] = [
     Stage("extract", extract.run, fatal=True),
+    Stage("maindoc", maindoc.run, fatal=True),
     Stage("pandoc", pandoc_run.run, fatal=True),
     Stage("normalize", normalize.run, fatal=False),
+    Stage("bibmatch", bibmatch.run, fatal=False),
     Stage("emit", emit.run, fatal=True),
     Stage("check", check.run, fatal=False),
 ]
 
 
 def convert(source: Path, output: Path, config: Config | None = None, *, standalone: bool = False,
-            workdir: Path | None = None, keep_workdir: bool = False) -> Report:
+            workdir: Path | None = None, keep_workdir: bool = False, into: Path | None = None) -> Report:
     config = config or Config()
     source, output = source.resolve(), output.resolve()
     own_tmp = workdir is None
     wd = Path(tempfile.mkdtemp(prefix="d2t-")) if own_tmp else workdir.resolve()
     wd.mkdir(parents=True, exist_ok=True)
-    ctx = Context(source=source, output=output, workdir=wd, config=config, standalone=standalone)
+    ctx = Context(source=source, output=output, workdir=wd, config=config, standalone=standalone,
+                  main=into.resolve() if into else None)
     try:
         for st in STAGES:
             try:

@@ -1,4 +1,4 @@
-"""Command line: docx2tex chapter.docx [-o chapter.tex] [--standalone] [-c cfg.yaml]."""
+"""Command line: docx2tex chapter.docx [-o chapter.tex] [--into main.tex] [--standalone] [-c cfg.yaml]."""
 
 from __future__ import annotations
 
@@ -15,6 +15,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("source", type=Path, help=".docx file")
     p.add_argument("-o", "--output", type=Path, help="output .tex (default: next to source)")
     p.add_argument("-c", "--config", type=Path, help="YAML config (docx2tex: section)")
+    p.add_argument("--into", type=Path, metavar="MAIN.tex",
+                   help="the main document: the fragment is written next to it, its theorems, "
+                        "macros, language and .bib are used, missing packages are reported")
     p.add_argument("--standalone", action="store_true",
                    help="also write <out>.standalone.tex with a preamble and compile it as a check")
     p.add_argument("--engine", choices=["pdflatex", "xelatex", "lualatex"])
@@ -24,10 +27,12 @@ def main(argv: list[str] | None = None) -> int:
     config = Config.load(a.config)
     if a.engine:
         config.engine = a.engine
-    output = a.output or a.source.with_suffix(".tex")
-    report = convert(a.source, output, config, standalone=a.standalone, workdir=a.workdir)
+    output = a.output or (a.into.parent / (a.source.stem + ".tex") if a.into else a.source.with_suffix(".tex"))
+    report = convert(a.source, output, config, standalone=a.standalone, workdir=a.workdir, into=a.into)
     c = report.counts()
     print(f"{'ok' if output.exists() else 'FAILED'}: {output}")
     print(f"report: {output.with_suffix('.report.md')} "
           f"(errors {c['error']}, warnings {c['warning']}, notes {c['info']})")
+    if a.into and output.exists():
+        print(f"add to {a.into.name}: \\input{{{output.stem}}}")
     return 0 if output.exists() else 1

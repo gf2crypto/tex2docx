@@ -10,6 +10,7 @@
 ```
 tex2docx-portable\
   tex2docx.bat        запуск (выставляет PATH только внутри своего окна)
+  docx2tex.bat        обратный инструмент, та же папка и те же инструменты
   python\             Python embeddable + пакеты + сам tex2docx (в Lib\site-packages)
   pandoc\pandoc.exe
   poppler\bin\        pdftoppm.exe и DLL
@@ -68,6 +69,7 @@ tex2docx-portable\
 D:\tex2docx-portable\tex2docx.bat --check
 D:\tex2docx-portable\tex2docx.bat C:\papers\paper\main.tex
 D:\tex2docx-portable\tex2docx.bat C:\papers\paper\main.tex --engine xelatex
+D:\tex2docx-portable\docx2tex.bat C:\papers\paper\chapter.docx --into C:\papers\paper\main.tex
 ```
 
 `--check` должен показать `ok` для pandoc, latexmk, pdflatex, kpsewhich, bibtex, pdftoppm,

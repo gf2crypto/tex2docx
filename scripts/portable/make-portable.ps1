@@ -3,7 +3,7 @@
 #   pandoc\   — pandoc.exe из zip
 #   poppler\  — pdftoppm.exe и его DLL из zip poppler-windows
 #   texlive\  — сюда отдельно ставится TeX Live с ключом -portable (см. docs/windows-portable.md)
-#   tex2docx.bat — запуск
+#   tex2docx.bat, docx2tex.bat — запуск
 # Запускать на компьютере с интернетом из корня репозитория (PowerShell 5+):
 #   .\scripts\portable\make-portable.ps1 -PythonVersion 3.12.7 -PandocZip pandoc-3.x-windows-x86_64.zip -PopplerZip Release-xx.yy.z-0.zip
 param(
@@ -64,5 +64,6 @@ Remove-Item (Join-Path $out "poppler-tmp") -Recurse
 
 # 5. запуск
 Copy-Item (Join-Path $PSScriptRoot "tex2docx.bat") $out -Force
+Copy-Item (Join-Path $PSScriptRoot "docx2tex.bat") $out -Force
 New-Item -ItemType Directory -Force -Path (Join-Path $out "texmf-home") | Out-Null
 Write-Host "Done: $out. Now install TeX Live into $out\texlive (install-tl-windows.bat -portable)."

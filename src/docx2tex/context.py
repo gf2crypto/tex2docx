@@ -19,6 +19,8 @@ class Context:
     config: Config
     standalone: bool = False
     prepared: Path | None = None  # working copy of the docx with markers (stages/extract.py)
+    main: Path | None = None  # --into: the main document the fragment is written for
+    main_doc: object = None  # maindoc.MainDoc, read by stages/maindoc.py
     report: Report = field(default_factory=Report)
     sidecar: Sidecar = field(default_factory=Sidecar)
     language: str = "english"
