@@ -1,5 +1,5 @@
 ﻿# Собирает переносимую папку tex2docx-portable\ (без установки и прав администратора):
-#   python\   — Python embeddable + пакеты из колес, tex2docx внутри site-packages
+#   python\   — Python embeddable + пакеты из колес, tex2docx и docx2tex внутри site-packages
 #   pandoc\   — pandoc.exe из zip
 #   poppler\  — pdftoppm.exe и его DLL из zip poppler-windows
 #   texlive\  — сюда отдельно ставится TeX Live с ключом -portable (см. docs/windows-portable.md)
@@ -44,8 +44,9 @@ Get-ChildItem $wheels -Filter *.whl | ForEach-Object {
 }
 Remove-Item $wheels -Recurse
 
-# 3. tex2docx itself
+# 3. tex2docx and docx2tex themselves
 Copy-Item (Join-Path $root "src\tex2docx") (Join-Path $site "tex2docx") -Recurse -Force
+Copy-Item (Join-Path $root "src\docx2tex") (Join-Path $site "docx2tex") -Recurse -Force
 Copy-Item (Join-Path $root "examples") (Join-Path $out "examples") -Recurse -Force
 Copy-Item (Join-Path $root "docs\windows-portable.md") $out -Force
 
