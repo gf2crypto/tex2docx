@@ -45,8 +45,13 @@ Get-ChildItem $wheels -Filter *.whl | ForEach-Object {
 Remove-Item $wheels -Recurse
 
 # 3. tex2docx and docx2tex themselves
-Copy-Item (Join-Path $root "src\tex2docx") (Join-Path $site "tex2docx") -Recurse -Force
-Copy-Item (Join-Path $root "src\docx2tex") (Join-Path $site "docx2tex") -Recurse -Force
+# Copy-Item into an existing folder would nest the package inside the old copy: remove first
+foreach ($pkg in @("tex2docx", "docx2tex")) {
+    $dest = Join-Path $site $pkg
+    if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+    Copy-Item (Join-Path $root "src\$pkg") $dest -Recurse -Force
+    Get-ChildItem $dest -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
+}
 Copy-Item (Join-Path $root "examples") (Join-Path $out "examples") -Recurse -Force
 Copy-Item (Join-Path $root "docs\windows-portable.md") $out -Force
 
