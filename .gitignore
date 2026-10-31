@@ -23,3 +23,6 @@ tests/corpus/**/*.pdf
 
 # Реальные документы пользователя в репозиторий не попадают никогда
 private/
+
+# docx2tex: входные docx корпуса строятся make.py, в репозиторий не попадают
+tests/docx2tex/corpus/*/input.docx

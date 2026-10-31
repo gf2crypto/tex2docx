@@ -54,6 +54,10 @@
 - [x] Алгоритмы: редактируемые строки в рамке (`stages/algorithms.py`, стили Algorithm/Algorithm Caption),
       картинкой — `algorithms: image`.
 
+## docx2tex — обратный инструмент
+
+Дорожная карта, архитектура и контракт круга — `docs/docx2tex/` (ADR 0007, предложено).
+
 ## Сделано, но стоит пересмотреть
 
 - `data/package-macros/`: пока только cryptocode; пополнять по отчетам (`pandoc.math-as-image` с именем команды).
