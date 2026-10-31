@@ -1027,6 +1027,19 @@ local WRAPPERS = { ['Body Text'] = true, ['First Paragraph'] = true, ['Normal'] 
 
 local process -- forward
 
+-- the first paragraph of a Table/Figure caption (pandoc 3.12+ wraps it in a Div of the
+-- caption style; 3.1 gives the Plain directly)
+local function caption_para(caption)
+  local cap = nil
+  if caption and caption.long then
+    pandoc.Blocks(caption.long):walk {
+      Para = function(p) cap = cap or p end,
+      Plain = function(p) cap = cap or pandoc.Para(p.content) end,
+    }
+  end
+  return cap
+end
+
 local function has_head(div)
   local first = div.content[1]
   return first ~= nil and first.t == 'Para' and split_theorem_head(first) ~= nil
@@ -1064,13 +1077,7 @@ process = function(blocks)
       push(emit_equations(items))
     elseif b.t == 'Figure' then  -- pandoc 3.12 reads picture + Image Caption as a Figure
       local img = first_image(b)
-      local cap = nil
-      if b.caption and b.caption.long then
-        pandoc.Blocks(b.caption.long):walk {
-          Para = function(p) cap = cap or p end,
-          Plain = function(p) cap = cap or pandoc.Para(p.content) end,
-        }
-      end
+      local cap = caption_para(b.caption)
       if img then
         push({ emit_figure(img, cap) })
       else
@@ -1091,8 +1098,7 @@ process = function(blocks)
       push(emit_table(blocks[i + 1], b.content[1]))
       i = i + 1
     elseif b.t == 'Table' then
-      local cap = b.caption and b.caption.long and b.caption.long[1]
-      push(emit_table(b, cap and cap.content and pandoc.Para(cap.content) or nil))
+      push(emit_table(b, caption_para(b.caption)))
     elseif st == 'Algorithm Caption' or st == 'Algorithm' then
       local cap = nil
       if st == 'Algorithm Caption' then

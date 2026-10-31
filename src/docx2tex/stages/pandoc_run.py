@@ -39,6 +39,22 @@ def bookmark_labels(ctx: Context) -> dict[str, str]:
     return out
 
 
+def _failure(stderr: str) -> str:
+    """The message of a failed pandoc run: for a Lua error the lines between
+    'Error running filter' and the stack traceback, else the last line."""
+    lines = [ln.strip() for ln in stderr.strip().splitlines() if ln.strip() and not ln.startswith("[d2t]")]
+    for i, ln in enumerate(lines):
+        if ln.startswith("Error running filter"):
+            body = []
+            for x in lines[i + 1:]:
+                if x.startswith("stack traceback"):
+                    break
+                body.append(x)
+            where = next((x.strip() for x in lines[i + 1:] if ".lua:" in x), "")
+            return (" | ".join(body) + " @ " + where.rsplit("/", 1)[-1].rsplit("\\", 1)[-1])[:300]
+    return (lines[-1] if lines else "no output")[:200]
+
+
 def run(ctx: Context) -> None:
     pandoc = require("pandoc")
     meta = ctx.workdir / "d2t-meta.json"
@@ -71,6 +87,5 @@ def run(ctx: Context) -> None:
         elif _MATHFAIL.search(line):
             ctx.report.warn(STAGE, "math.not-converted", "")
     if proc.returncode != 0 or not out.exists():
-        tail = proc.stderr.strip().splitlines()[-1:] or ["no output"]
-        raise StageError("pandoc.failed", tail[0][:200])
+        raise StageError("pandoc.failed", _failure(proc.stderr))
     ctx.tex = out.read_text(encoding="utf-8")

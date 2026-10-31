@@ -10,6 +10,7 @@ tex_contains:
   - "\\State \\Return истина"
   - "\\EndIf"                             # закрыто по отступу (в Word строк end нет)
   - "\\EndFor"
+  - "\\begin{table}[ht]\n  \\centering\n  \\caption{Значения}"   # Table Caption перед таблицей
   - "\\cite{bib:1,bib:2}"
   - "\\begin{thebibliography}{9}"
   - "\\bibitem{bib:1} Первый источник."

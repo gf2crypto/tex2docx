@@ -138,7 +138,8 @@
 - Стили абзацев: `custom-style` для пользовательских, но стиль с «известным» именем
   (`Definition`) приходит классом Div; имена стилей Word — строчными (`caption`).
 - Картинка + абзац `Image Caption`: 3.1 — `Div "Captioned Figure"` + `Div "Image Caption"`;
-  3.12 — блок `Figure`, подпись внутри `caption.long` как Div с Para.
+  3.12 — блок `Figure`, подпись внутри `caption.long` как Div с Para. Подпись таблицы (`Table.caption`)
+  в 3.12+ — тоже Div с Para внутри `long`, в 3.1 — Plain. Проверено и на 3.13.
 - Строка `align`, вынесенная tex2docx в свой абзац (`a & = b`): texmath 3.1 отдает
   `\begin{matrix} a & = b \end{matrix}`, 3.12 — `\begin{aligned} … \end{aligned}`.
 - Идентификаторы: docx-писатель 3.12 называет закладки и цели гиперссылок для Div/ссылок

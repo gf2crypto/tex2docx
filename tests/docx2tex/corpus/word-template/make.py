@@ -67,6 +67,10 @@ def main() -> None:
         p.add_run(num + "\t" * level)
         for text, bold in parts:
             p.add_run(text).bold = bold
+    doc.add_paragraph("Таблица 1. Значения", style=style(doc, "Table Caption"))
+    t = doc.add_table(rows=2, cols=2)
+    t.cell(0, 0).text, t.cell(0, 1).text = "a", "b"
+    t.cell(1, 0).text, t.cell(1, 1).text = "1", "2"
     doc.add_paragraph("См. также [1, 2].", style=style(doc, "Body Text"))
     doc.add_paragraph("Список литературы", style=style(doc, "Heading 1"))
     doc.add_paragraph("1. Первый источник.", style=style(doc, "Bibliography"))
