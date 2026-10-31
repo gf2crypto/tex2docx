@@ -52,8 +52,8 @@ def _mark_bookmarks(body: etree._Element) -> int:
     spanning: dict[str, str] = {}  # id -> name of bookmarks that start between paragraphs
     for bm in list(body.iter(_q("bookmarkStart"))):
         name = bm.get(_q("name"), "")
-        if not name or (name.startswith("_") and not _PANDOC_HASH.fullmatch(name)):
-            continue  # Word's own _Toc/_Ref/_GoBack; pandoc 3.12 hashes Div ids to _<39 hex>
+        if not name or (name.startswith("_") and not _KEPT.fullmatch(name)):
+            continue  # Word's own _Toc/_GoBack/_Hlk; kept: _Ref (cross-references), pandoc hashes
         parent = bm.getparent()
         if parent.tag == _q("p"):
             bm.addnext(_marker_run(name))
@@ -82,7 +82,7 @@ def _mark_bookmarks(body: etree._Element) -> int:
 
 
 _REF = re.compile(r"^\s*REF\s+(\S+)")
-_PANDOC_HASH = re.compile(r"_[0-9a-f]{39}")
+_KEPT = re.compile(r"_[0-9a-f]{39}|_Ref\d+")  # pandoc 3.12 hashes Div ids to _<39 hex>
 
 
 def _hyperlink(anchor: str, runs: list[etree._Element]) -> etree._Element:

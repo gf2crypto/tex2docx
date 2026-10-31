@@ -3,7 +3,8 @@
 Status: implemented (M0): bookmarks (name -> plain text inside), simple fields
 (w:instr), the sidecar <name>.t2d.xml next to the docx, document language
 (sidecar, config, else guessed from the text). M1: the working copy
-workdir/prepared.docx with markers for pandoc (stages/prepare.py).
+workdir/prepared.docx with markers for pandoc (stages/prepare.py). M2: OLE formulas
+(Equation Editor, MathType) counted into math.not-omml - they stay pictures.
 """
 
 from __future__ import annotations
@@ -46,6 +47,18 @@ def read_facts(xml: bytes) -> tuple[dict[str, str], list[str], str]:
     return bookmarks, fields, plain
 
 
+_O = "urn:schemas-microsoft-com:office:office"
+
+
+def count_ole_formulas(xml: bytes) -> int:
+    """Equation Editor / MathType objects: pictures to pandoc, not formulas."""
+    from lxml import etree
+
+    root = etree.fromstring(xml)
+    return sum(1 for o in root.iter(f"{{{_O}}}OLEObject")
+               if re.match(r"Equation|MathType", o.get("ProgID", ""), re.I))
+
+
 def run(ctx: Context) -> None:
     if not ctx.source.is_file():
         raise StageError("extract.no-source", str(ctx.source))
@@ -55,6 +68,8 @@ def run(ctx: Context) -> None:
     except (zipfile.BadZipFile, KeyError) as e:
         raise StageError("extract.not-a-docx", type(e).__name__) from e
     ctx.bookmarks, ctx.fields, plain = read_facts(xml)
+    if n_ole := count_ole_formulas(xml):
+        ctx.report.warn(STAGE, "math.not-omml", str(n_ole))
     sc = Sidecar.load(Sidecar.path_for(ctx.source))
     if sc is not None:
         ctx.sidecar = sc

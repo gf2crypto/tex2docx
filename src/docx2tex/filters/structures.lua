@@ -132,6 +132,16 @@ local function split_markers(inlines)
 end
 
 local function is_label(x) return x.t == 'Span' and x.classes:includes('t2d-label') end
+
+-- the label a marker stands for: resolved at once, or (Word's own cross-reference bookmarks
+-- _RefNNN) made up from the context in pass 2
+local function label_of(sp)
+  local l = sp.attributes.label
+  if l ~= '' then return l end
+  local name = sp.attributes.name
+  if name:match('^_Ref%d+$') then return name_labels[name] end
+  return nil
+end
 local function is_tab(x) return x.t == 'Span' and x.classes:includes('t2d-tab') end
 local function is_end(x) return x.t == 'Span' and x.classes:includes('t2d-label-end') end
 
@@ -153,8 +163,8 @@ local function take_labels(obj)
   local found, names, seen = {}, {}, {}
   local function f(sp)
     if is_label(sp) then
-      local l = sp.attributes.label
-      if l ~= '' and not seen[l] then seen[l] = true; found[#found + 1] = l end
+      local l = label_of(sp)
+      if l and not seen[l] then seen[l] = true; found[#found + 1] = l end
       names[#names + 1] = sp.attributes.name
       return {}
     end
@@ -423,11 +433,15 @@ local function env_for(title, style)
   return (lower(style):gsub('%s+', ''))
 end
 
+local in_theorem = 0  -- inside a theorem/proof the "bold word" heuristics are off
+
 local function emit_theorem(div, style, process, extra)
   local labels, body = take_labels(div)
   local inner = pandoc.List(body.content)
   if extra then inner:extend(extra) end
+  in_theorem = in_theorem + 1
   local content = process(inner)
+  in_theorem = in_theorem - 1
   local first = content[1]
   if not first or first.t ~= 'Para' then
     report('warning', 'theorem.no-head', style)
@@ -455,9 +469,36 @@ local function emit_theorem(div, style, process, extra)
   return out
 end
 
+-- a paragraph typed in Word without the styles: bold "Теорема 3." / italic "Доказательство."
+local PROOF_NAMES = { 'Доказательство', 'Proof' }
+
+local function text_theorem(para)
+  local ins = clean_inlines(para.content)
+  local head = ins[1]
+  if not head or (head.t ~= 'Strong' and head.t ~= 'Emph') then return nil end
+  local text = trim(stringify(head))
+  local title = text:match('^(.-)[%s' .. NBSP .. ']*[%d%.]*%.?$')
+  if not title or title == '' then return nil end
+  local key = lower(title)
+  if theorem_envs[key] then return title, key end
+  return nil
+end
+
+local function text_proof(para)
+  local ins = clean_inlines(para.content)
+  local head = ins[1]
+  if not head or (head.t ~= 'Strong' and head.t ~= 'Emph') then return false end
+  local text = trim(stringify(head)):gsub('%.$', '')
+  if names.proof and text == names.proof then return true end
+  for _, n in ipairs(PROOF_NAMES) do if text == n then return true end end
+  return false
+end
+
 local function emit_proof(div, process)
   local _, body = take_labels(div)
+  in_theorem = in_theorem + 1
   local content = process(body.content)
+  in_theorem = in_theorem - 1
   local first = content[1]
   if first and first.t == 'Para' then
     local ins = clean_inlines(first.content)
@@ -510,7 +551,7 @@ local function caption_text(para, kinds)
   local tex = write_inlines(content)
   for _, name in ipairs(kinds) do
     if name and name ~= '' then
-      local pat = '^' .. escape_pattern(name) .. '[~%s]*%d+[%.:]?[~%s]*'
+      local pat = '^' .. escape_pattern(name) .. '[~%s]*%d+[%.:]?[~%s]*%-*[~%s]*'
       local stripped, n = tex:gsub(pat, '')
       if n > 0 then return trim(stripped), labels end
     end
@@ -548,32 +589,95 @@ local function cell_text(cell)
 end
 
 -- plain tabular with l columns and \hline, when no cell spans; nil otherwise
+-- tabular with | borders and \hline; merged cells -> \multicolumn / \multirow (with \cline
+-- where a row span continues); a column whose text is long gets p{<width>\linewidth}
+local LONG_CELL = 40
+
 local function tabular_lines(tbl)
   local ncols = #tbl.colspecs
-  local rows = {}
+  if ncols == 0 then return nil end
+  local grid = {}       -- grid[r][c] = { origin = cell, dr = , dc = }
+  local nrows = 0
+  local longest = {}    -- per column: longest cell text
+  local has_multirow = false
   local function add_rows(rowlist)
     for _, row in ipairs(rowlist) do
-      local cells = {}
-      for _, c in ipairs(row.cells) do
-        if c.row_span > 1 or c.col_span > 1 then return false end
-        cells[#cells + 1] = cell_text(c)
+      nrows = nrows + 1
+      local r = nrows
+      grid[r] = grid[r] or {}
+      local c = 1
+      for _, cell in ipairs(row.cells) do
+        while grid[r][c] do c = c + 1 end
+        local text = cell_text(cell)
+        local cs, rs = math.max(1, cell.col_span), math.max(1, cell.row_span)
+        local origin = { text = text, cols = cs, rows = rs }
+        longest[c] = math.max(longest[c] or 0, utf8.len(text) or #text)
+        if rs > 1 then has_multirow = true end
+        for dr = 0, rs - 1 do
+          grid[r + dr] = grid[r + dr] or {}
+          for dc = 0, cs - 1 do grid[r + dr][c + dc] = { origin = origin, dr = dr, dc = dc } end
+        end
+        c = c + cs
       end
-      rows[#rows + 1] = table.concat(cells, ' & ') .. ' \\\\'
     end
-    return true
   end
-  if not add_rows(tbl.head.rows) then return nil end
-  for _, body in ipairs(tbl.bodies) do
-    if not add_rows(body.body) then return nil end
+  add_rows(tbl.head.rows)
+  for _, body in ipairs(tbl.bodies) do add_rows(body.body) end
+  add_rows(tbl.foot.rows)
+  if has_multirow then report('info', 'table.multirow', '') end
+  local colspec = {}
+  for c = 1, ncols do
+    local w = tbl.colspecs[c] and tbl.colspecs[c][2]
+    if (longest[c] or 0) > LONG_CELL then
+      local frac = (type(w) == 'number' and w > 0) and w or (1 / ncols)
+      colspec[c] = string.format('p{%.2f\\linewidth}', frac * 0.9)
+    else
+      colspec[c] = 'l'
+    end
   end
-  if not add_rows(tbl.foot.rows) then return nil end
-  local spec = '|' .. string.rep('l|', ncols)
-  local lines = { '\\begin{tabular}{' .. spec .. '}', '\\hline' }
-  for i, r in ipairs(rows) do
-    lines[#lines + 1] = r
-    if i == #tbl.head.rows and #tbl.head.rows > 0 then lines[#lines + 1] = '\\hline' end
+  local lines = { '\\begin{tabular}{|' .. table.concat(colspec, '|') .. '|}', '\\hline' }
+  for r = 1, nrows do
+    local cells = {}
+    local c = 1
+    while c <= ncols do
+      local g = grid[r][c]
+      if not g then
+        cells[#cells + 1] = ''
+        c = c + 1
+      else
+        local o = g.origin
+        local text = g.dr == 0 and o.text or ''
+        if g.dr == 0 and o.rows > 1 then text = '\\multirow{' .. o.rows .. '}{*}{' .. text .. '}' end
+        if o.cols > 1 then
+          text = '\\multicolumn{' .. o.cols .. '}{' .. (c == 1 and '|' or '') .. 'l|}{' .. text .. '}'
+        end
+        cells[#cells + 1] = text
+        c = c + o.cols
+      end
+    end
+    lines[#lines + 1] = table.concat(cells, ' & ') .. ' \\\\'
+    -- the rule under the row: \hline, or \cline around cells whose row span goes on
+    local open = false
+    for cc = 1, ncols do
+      local g = grid[r][cc]
+      if g and g.origin.rows - 1 > g.dr then open = true end
+    end
+    if not open then
+      lines[#lines + 1] = '\\hline'
+    else
+      local a = nil
+      for cc = 1, ncols + 1 do
+        local g = grid[r][cc]
+        local continues = cc <= ncols and g and (g.origin.rows - 1 > g.dr)
+        if cc <= ncols and not continues then
+          a = a or cc
+        elseif a then
+          lines[#lines + 1] = '\\cline{' .. a .. '-' .. (cc - 1) .. '}'
+          a = nil
+        end
+      end
+    end
   end
-  lines[#lines + 1] = '\\hline'
   lines[#lines + 1] = '\\end{tabular}'
   return lines
 end
@@ -581,11 +685,8 @@ end
 local function emit_table(tbl, caption_para)
   local body = tabular_lines(tbl)
   if not body then
-    report('warning', 'table.spans', '')
-    if caption_para then
-      tbl.caption = pandoc.Caption(pandoc.Plain(clean_inlines(caption_para.content)))
-    end
-    return { tbl }
+    report('warning', 'table.empty', '')
+    return {}
   end
   local lines = {}
   if caption_para then
@@ -859,6 +960,56 @@ local function emit_header(h)
 end
 
 -- ---------------------------------------------------------------------------
+-- labels for Word's own cross-references (bookmarks _RefNNN) from where they sit
+
+local TRANSLIT = { ['а'] = 'a', ['б'] = 'b', ['в'] = 'v', ['г'] = 'g', ['д'] = 'd', ['е'] = 'e', ['ё'] = 'e',
+  ['ж'] = 'zh', ['з'] = 'z', ['и'] = 'i', ['й'] = 'j', ['к'] = 'k', ['л'] = 'l', ['м'] = 'm', ['н'] = 'n',
+  ['о'] = 'o', ['п'] = 'p', ['р'] = 'r', ['с'] = 's', ['т'] = 't', ['у'] = 'u', ['ф'] = 'f', ['х'] = 'h',
+  ['ц'] = 'c', ['ч'] = 'ch', ['ш'] = 'sh', ['щ'] = 'shch', ['ъ'] = '', ['ы'] = 'y', ['ь'] = '', ['э'] = 'e',
+  ['ю'] = 'yu', ['я'] = 'ya' }
+
+local function slug(text)
+  local out = {}
+  for _, cp in utf8.codes(lower(text)) do
+    local ch = utf8.char(cp)
+    if TRANSLIT[ch] then out[#out + 1] = TRANSLIT[ch]
+    elseif ch:match('^[%w]$') then out[#out + 1] = ch
+    else out[#out + 1] = '-' end
+  end
+  local s = table.concat(out):gsub('%-+', '-'):gsub('^%-', ''):gsub('%-$', '')
+  return s:sub(1, 30):gsub('%-$', '')
+end
+
+local function word_ref_label(inlines, style, is_header, name)
+  local text = trim(stringify(clean_inlines(inlines)))
+  if is_header then
+    local rest = text:match('^%d[%d%.]*[%s' .. NBSP .. ']+(.*)$') or text
+    return 'sec:' .. slug(rest)
+  end
+  local function number_after(list, prefix)
+    for _, n in ipairs(list) do
+      if n and n ~= '' then
+        local num = text:match('^' .. escape_pattern(n) .. '[%s' .. NBSP .. ']*(%d+)')
+        if num then return prefix .. ':' .. num end
+      end
+    end
+    return nil
+  end
+  if style == 'Image Caption' or style == 'Table Caption' or style == 'Algorithm Caption' or style == nil then
+    return number_after(with_name(names.figure, FIGURE_NAMES), 'fig')
+      or number_after(with_name(names.table, TABLE_NAMES), 'tab')
+      or number_after(with_name(names.algorithm, ALGORITHM_NAMES), 'alg')
+      or (text:match('^%((%d[%d%.]*)%)$') and 'eq:' .. text:match('^%((%d[%d%.]*)%)$'))
+      or ('ref:' .. name:match('%d+'))
+  end
+  if style == 'Equation' then
+    local num = text:match('%((%d[%d%.]*)%)')
+    if num then return 'eq:' .. num end
+  end
+  return 'ref:' .. name:match('%d+')
+end
+
+-- ---------------------------------------------------------------------------
 -- the block pass
 
 local THEOREM_STYLES = { Theorem = true, Definition = true, Remark = true, Lemma = true, Corollary = true,
@@ -924,7 +1075,7 @@ process = function(blocks)
       else
         push({ raw('\\begin{center}\n  \\includegraphics{' .. img.src .. '}\n\\end{center}') })
       end
-    elseif st == 'Table Caption' and blocks[i + 1] and blocks[i + 1].t == 'Table' then
+    elseif (st == 'Table Caption' or st == 'Image Caption') and blocks[i + 1] and blocks[i + 1].t == 'Table' then
       push(emit_table(blocks[i + 1], b.content[1]))
       i = i + 1
     elseif b.t == 'Table' then
@@ -943,6 +1094,13 @@ process = function(blocks)
       end
       i = i - 1
       push({ emit_algorithm(cap, lines) })
+    elseif b.t == 'Para' and in_theorem == 0 and text_theorem(b) then
+      local title = text_theorem(b)
+      report('info', 'theorem.by-text', title)
+      push(emit_theorem(pandoc.Div({ b }), title, process))
+    elseif b.t == 'Para' and in_theorem == 0 and text_proof(b) then
+      report('info', 'proof.by-text', '')
+      push(emit_proof(pandoc.Div({ b }), process))
     elseif st and THEOREM_STYLES[st] then
       -- the bookmark of the theorem may run over the following paragraphs (its formulas)
       local _, _, names = take_labels(b)
@@ -1073,12 +1231,21 @@ function Pandoc(doc)
   header_labels = {}
   name_labels = {}
   local open = {}
-  local function learn(inlines)
+  local function learn(inlines, style, is_header)
     local found = {}
     for _, x in ipairs(inlines) do
+      if is_label(x) and x.attributes.label == '' and x.attributes.name:match('^_Ref%d+$')
+          and not name_labels[x.attributes.name] then
+        local l = word_ref_label(inlines, style, is_header, x.attributes.name)
+        name_labels[x.attributes.name] = l
+        bookmarked[l] = true
+        report('info', 'label.word-ref', l)
+      end
+    end
+    for _, x in ipairs(inlines) do
       if is_label(x) then
-        if x.attributes.label == '' then open[x.attributes.name] = true
-        else found[#found + 1] = x.attributes.label end
+        local l = label_of(x)
+        if l then found[#found + 1] = l else open[x.attributes.name] = true end
       end
     end
     for n in pairs(open) do
@@ -1088,8 +1255,24 @@ function Pandoc(doc)
       if is_end(x) then open[x.attributes.name] = nil end
     end
   end
-  doc:walk { Para = function(p) learn(p.content) end, Plain = function(p) learn(p.content) end,
-             Header = function(h) learn(h.content) end }
+  local function learn_blocks(blocks, style)
+    for _, b in ipairs(blocks) do
+      if b.t == 'Para' or b.t == 'Plain' then learn(b.content, style, false)
+      elseif b.t == 'Header' then learn(b.content, style, true)
+      elseif b.t == 'Div' then learn_blocks(b.content, style_of(b) or style)
+      elseif b.t == 'Figure' then
+        learn_blocks(b.content, style)
+        if b.caption and b.caption.long then learn_blocks(pandoc.Blocks(b.caption.long), 'Image Caption') end
+      elseif b.t == 'BlockQuote' then learn_blocks(b.content, style)
+      elseif b.t == 'OrderedList' or b.t == 'BulletList' then
+        for _, item in ipairs(b.content) do learn_blocks(item, style) end
+      elseif b.t == 'Table' then
+        b:walk { Para = function(p) learn(p.content, 'Table', false) end,
+                 Plain = function(p) learn(p.content, 'Table', false) end }
+      end
+    end
+  end
+  learn_blocks(doc.blocks, nil)
   for i, b in ipairs(doc.blocks) do
     if b.t == 'Header' then
       local hl = take_labels(b)
@@ -1118,6 +1301,11 @@ function Pandoc(doc)
         link_labels[text] = link_labels[text] or label
         return pandoc.RawInline('latex', '\\eqref{' .. label .. '}')
       end
+      -- Word's cross-reference "Рисунок 1": the word stays text, the number is the reference
+      local word = text:match('^(.-)[%s' .. NBSP .. ']+%d[%d%.]*$')
+      if word and word ~= '' and not word:match('[%d%p]$') then
+        return pandoc.RawInline('latex', word .. '~\\ref{' .. label .. '}')
+      end
       return pandoc.RawInline('latex', '\\ref{' .. label .. '}')
     end,
   }
@@ -1132,8 +1320,9 @@ function Pandoc(doc)
       if is_tab(sp) then return pandoc.Space() end
       if is_end(sp) then return {} end
       if is_label(sp) then
-        if sp.attributes.label == '' then return {} end
-        return pandoc.RawInline('latex', '\\label{' .. sp.attributes.label .. '}')
+        local l = label_of(sp)
+        if not l then return {} end
+        return pandoc.RawInline('latex', '\\label{' .. l .. '}')
       end
     end,
   }

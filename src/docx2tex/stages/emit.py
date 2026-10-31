@@ -4,12 +4,16 @@ Status: implemented (M0). The fragment never carries \\usepackage or \\newtheore
 needed packages go to the report (emit.package) and theorem environments used go to
 emit.newtheorem, for the author to check against the main preamble.
 --standalone additionally writes <out>.standalone.tex with a minimal preamble.
+M2: pictures in formats LaTeX cannot include are converted (BMP/TIFF/GIF -> PNG with
+Pillow; EMF/WMF -> PDF with LibreOffice when present, else images.unsupported).
 """
 
 from __future__ import annotations
 
 import re
 import shutil
+import subprocess
+from pathlib import Path
 
 from ..context import Context
 
@@ -45,9 +49,43 @@ def standalone(ctx: Context) -> str:
     head = ["\\documentclass[12pt]{article}"] + ["\\usepackage" + p for p in pkgs]
     for env, title in sorted(ctx.theorem_envs_used.items()):
         head.append(f"\\newtheorem{{{env}}}{{{title}}}")
+    # macros folded back by normalize (the main document defines them; here we must)
+    for name, body in sorted({**ctx.sidecar.macros, **ctx.config.macros}.items()):
+        if re.search(re.escape(name) + r"(?![A-Za-z])", ctx.tex):
+            head.append(f"\\newcommand{{{name}}}{{{body}}}")
     # the title block is commented out in the fragment (the main document has its own)
     body = re.sub(r"^% (\\(?:title|author|date)\{)", r"\1", ctx.tex, flags=re.M)
     return "\n".join(head) + "\n\\begin{document}\n" + body + "\\end{document}\n"
+
+
+RASTER_TO_PNG = {".bmp", ".tif", ".tiff", ".gif", ".webp"}
+VECTOR_TO_PDF = {".emf", ".wmf"}  # Word's own vector pictures: LibreOffice, if there is one
+
+
+def convert_image(src: Path, dest: Path, ctx: Context) -> str:
+    """Copy src into dest in a format LaTeX can include; returns the file name used."""
+    ext = src.suffix.lower()
+    if ext in RASTER_TO_PNG:
+        from tex2docx.stages.figures import to_png
+
+        target = dest / (src.stem + ".png")
+        if to_png(src, target):
+            ctx.report.info(STAGE, "images.converted", src.name)
+            return target.name
+    elif ext in VECTOR_TO_PDF:
+        soffice = shutil.which("soffice") or shutil.which("libreoffice")
+        if soffice:
+            try:
+                subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir", str(dest), str(src)],
+                               capture_output=True, timeout=120, check=False)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+            if (dest / (src.stem + ".pdf")).is_file():
+                ctx.report.info(STAGE, "images.converted", src.name)
+                return src.stem + ".pdf"
+        ctx.report.warn(STAGE, "images.unsupported", src.name)
+    shutil.copyfile(src, dest / src.name)
+    return src.name
 
 
 def run(ctx: Context) -> None:
@@ -65,10 +103,13 @@ def run(ctx: Context) -> None:
         n = 0
         for f in sorted(media.rglob("*")):  # flat: normalize wrote <images_dir>/<name>
             if f.is_file():
-                shutil.copyfile(f, dest / f.name)
+                out_name = convert_image(f, dest, ctx)
+                if out_name != f.name:
+                    ctx.tex = ctx.tex.replace(f"{ctx.config.images_dir}/{f.name}", f"{ctx.config.images_dir}/{out_name}")
                 n += 1
         if n:
             ctx.report.info(STAGE, "emit.images", str(n))
+        ctx.output.write_text(ctx.tex, encoding="utf-8")
     if ctx.standalone:
         sa = ctx.output.with_suffix(".standalone.tex")
         sa.write_text(standalone(ctx), encoding="utf-8")

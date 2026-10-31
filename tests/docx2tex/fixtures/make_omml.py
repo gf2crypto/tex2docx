@@ -10,7 +10,8 @@ import zlib
 from pathlib import Path
 
 HERE = Path(__file__).parent
-FORMULAS = {"inline-x2": "$x^2$", "display-sum": r"$$\sum_{i=1}^{n} x_i$$"}
+FORMULAS = {"inline-x2": "$x^2$", "display-sum": r"$$\sum_{i=1}^{n} x_i$$",
+            "bold-G": r"$\mathbf{G}\mathbf{x} \in \mathbb{F}_q^n$"}
 NS = ('xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" '
       'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"')
 

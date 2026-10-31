@@ -17,6 +17,7 @@
 | `Centered` / `Right Aligned` / `Left Aligned`; `Abstract` | `center` / `flushright` / `flushleft`; `abstract` |
 | `Title` / `Author` / `Date` (от `\maketitle`) | `\maketitle` с закомментированными `% \title{…}` / `% \author{…}` (объявляет основной документ; `--standalone` их раскомментирует) |
 | Неразрывные пробелы (`postprocess.nbsp`) | `~` |
+| Спутник `<macros>`: простые макросы документа (`\F` → `\mathbb{F}`) | тела сворачиваются назад в имена (`\mathbb{F}_q` → `\F_q`) |
 
 Как docx2tex это читает: `stages/prepare.py` делает рабочую копию docx, где закладки
 (U+E000 имя U+E001 в начале, U+E003 имя U+E001 в конце охвата), поля `REF` (гиперссылки) и

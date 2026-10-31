@@ -31,11 +31,13 @@ def build_input(case: str) -> Path:
 
 @pytest.fixture(scope="module", params=CASES)
 def converted(request, tmp_path_factory):
-    from docx2tex.pipeline import convert  # noqa: PLC0415 - exists from M0 on
+    from docx2tex.config import Config  # noqa: PLC0415 - exists from M0 on
+    from docx2tex.pipeline import convert  # noqa: PLC0415
 
     case = request.param
     out = tmp_path_factory.mktemp(case) / f"{case}.tex"
-    convert(build_input(case), out, standalone=True)
+    cfg = CORPUS / case / "config.yaml"
+    convert(build_input(case), out, Config.load(cfg) if cfg.is_file() else None, standalone=True)
     expect = yaml.safe_load((CORPUS / case / "expect.yaml").read_text(encoding="utf-8")) or {}
     report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
     tex = out.read_text(encoding="utf-8") if out.exists() else ""

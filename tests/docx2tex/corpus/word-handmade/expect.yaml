@@ -1,0 +1,25 @@
+# Глава, набранная в Word без шаблона: прямое форматирование, подписи и ссылки Word, слияние ячеек.
+tex_contains:
+  - "\\section{Глава без шаблона}"
+  - "\\begin{theorem}\nДля любого $x^{2}$ утверждение верно.\n\\end{theorem}"   # полужирное «Теорема 1.»
+  - "\\begin{proof}\nОчевидно.\n\\end{proof}"                                   # курсивное «Доказательство.», без ◻
+  - "$\\matr{G"                                                               # макрос основного документа назад
+  - "\\in \\mathbb{F}_{q}^{n}$"                                                # (3.1: \matr{G}\matr{x}, 3.12: \matr{Gx})
+  - "\\[\n  \\sum_{i = 1}^{n}x_{i}\n\\]"                                         # центрированный абзац-формула
+  - "\\begin{itemize}\n\\item\n  Внешний пункт\n\n  \\begin{itemize}\n  \\item\n    Вложенный пункт"
+  - "\\multicolumn{2}{|l|}{Объединено по горизонтали}"
+  - "\\multirow{2}{*}{Вертикально}"
+  - "\\cline{2-3}"
+  - "\\caption{Пример картинки}\\label{fig:1}"                                  # подпись Word: SEQ-поле, закладка _Ref
+  - "Как показано на Рисунок~\\ref{fig:1}, все хорошо."                         # REF-поле Word
+tex_not_contains:
+  - "◻"
+  - "\\textbf{Теорема"
+  - "_Ref100"
+  - "SEQ"
+compiles: true
+packages: [amsthm, amssymb, graphicx, multirow]
+report_absent:
+  - internal-error
+  - link.unresolved
+  - math.not-omml

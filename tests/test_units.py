@@ -476,3 +476,22 @@ def test_sidecar_embedded_in_docx_survives_without_the_file(tmp_path):
     assert read_embedded(docx).cites == {"1": "knuth", "2": "lamport"}
     with zipfile.ZipFile(docx) as z:
         assert sum(1 for n in z.namelist() if n.startswith("customXml/item")) == 2
+
+
+# --- macros of the main document fold back (docx2tex M2) -----------------------
+
+def test_simple_macros_and_fold_back():
+    from docx2tex.stages.normalize import fold_macros
+    from tex2docx.stages.sidecar import simple_macros
+
+    tex = (r"\newcommand{\F}{\mathbb{F}} \newcommand{\wt}[1]{\operatorname{wt}(#1)}"
+           r" \DeclareMathOperator{\rank}{rank} \newcommand\matr{\mathbf} \renewcommand{\vect}{\mathbf}"
+           r" \newcommand{\eg}{e.g.}")
+    macros = simple_macros(tex)
+    assert macros == {"\\F": "\\mathbb{F}", "\\rank": "\\operatorname{rank}",
+                      "\\matr": "\\mathbf", "\\vect": "\\mathbf"}  # \wt has a parameter, \eg is text
+    out, n, ambiguous = fold_macros(r"$\mathbb{F}_q^n$, $\mathbf{G}x$, $\operatorname{rank}\mathbf{G}$, \mathbb{F}x",
+                                    macros)
+    assert out == r"$\F_q^n$, $\mathbf{G}x$, $\rank\mathbf{G}$, \F{}x"  # {} keeps the letter apart
+    assert n == 3
+    assert sorted(ambiguous) == ["\\matr", "\\vect"]  # two names, one body: left alone
