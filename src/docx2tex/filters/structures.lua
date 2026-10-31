@@ -403,8 +403,8 @@ local function split_theorem_head(para)
       if ins[k].t == 'Str' and ins[k].text:match('%)%.?$') then break end
       k = k + 1
     end
-    if ins[k] then
-      note = stringify(pandoc.Inlines(parts)):gsub('^%(', ''):gsub('%)%.?$', '')
+    if ins[k] then  -- as LaTeX, not plain text: the note may hold formulas
+      note = write_inlines(pandoc.Inlines(parts)):gsub('^%(', ''):gsub('%)%.?$', '')
       i = k + 1
       while ins[i] and ins[i].t == 'Space' do i = i + 1 end
     end
