@@ -91,9 +91,11 @@ function Pandoc(doc)
     if label == '' or label:match('^t2d:auto:') then return plain(span) end
     bookmark_id = bookmark_id + 1
     local name = bookmark_name(label)
-    return { pandoc.RawInline('openxml', '<w:bookmarkStart w:id="' .. bookmark_id .. '" w:name="' .. name .. '"/>'),
-             pandoc.Str(pandoc.utils.stringify(span)),
-             pandoc.RawInline('openxml', '<w:bookmarkEnd w:id="' .. bookmark_id .. '"/>') }
+    local out = pandoc.List({ pandoc.RawInline('openxml',
+      '<w:bookmarkStart w:id="' .. bookmark_id .. '" w:name="' .. name .. '"/>') })
+    out:extend(span.content)  -- may hold Math (\tag{$\ast$})
+    out:insert(pandoc.RawInline('openxml', '<w:bookmarkEnd w:id="' .. bookmark_id .. '"/>'))
+    return out
   end
 
   local function convert(span)

@@ -21,8 +21,9 @@ class Config:
     # black headings; see scripts/make_reference_docx.py).
     # reference_docx, when set, wins.
     profile: str | None = None
-    # Heading of the proof environment (pandoc writes English "Proof.").
-    proof_name: str = "Доказательство"
+    # Heading of the proof environment (pandoc writes English "Proof."). None = the
+    # document's \renewcommand{\proofname}, else by babel language (Доказательство/Proof).
+    proof_name: str | None = None
     # amsthm \theoremstyle -> Word paragraph style name.
     theorem_styles: dict[str, str] = field(
         default_factory=lambda: {

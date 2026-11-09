@@ -540,7 +540,7 @@ local function emit_theorem(div, style, process, extra)
 end
 
 -- a paragraph typed in Word without the styles: bold "Теорема 3." / italic "Доказательство."
-local PROOF_NAMES = { 'Доказательство', 'Proof' }
+local PROOF_NAMES = { 'Доказательство', 'Доведення', 'Proof' }
 
 local function text_theorem(para)
   local ins = clean_inlines(para.content)

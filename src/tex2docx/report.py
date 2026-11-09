@@ -2,17 +2,34 @@
 
 The report is what the user sends back when a document converts badly, so it
 must never contain document text. Allowed: command and environment names,
-label names, counts, line numbers, tool error headers.
+label names, counts, line numbers, tool error headers. Directories of absolute paths
+are cut from every detail (tool messages name files in the work folder, whose path
+carries the user name): only the file name stays.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 LEVELS = ("info", "warning", "error")
+
+# Directory part of an absolute path: "/Users/u/wd/", "C:\Users\u\wd\" or "C:/Users/u/wd/".
+# Backslash paths count only after a drive letter, so TeX control sequences stay.
+_ABS_DIRS = re.compile(r"(?:(?<![\w])[A-Za-z]:[\\/]|(?<![\w.~])/)(?:[^\s/\\:`'\"]+[\\/])+")
+# Paths that may hold spaces: a TeX log header "<path>:<line>: ..." and a quoted `<path>'.
+_LOG_HEAD = re.compile(r"^(?:[A-Za-z]:)?[^:`']*[\\/](?=[^\\/:]+:\d+:)")
+_QUOTED = re.compile(r"(?<=`)[^`']*[\\/](?=[^`'\\/]*')")
+
+
+def strip_dirs(detail: str) -> str:
+    """'/Users/u/wd/check/main.tex:21: Undefined...' -> 'main.tex:21: Undefined...'."""
+    detail = _LOG_HEAD.sub("", detail)
+    detail = _QUOTED.sub("", detail)
+    return _ABS_DIRS.sub("", detail)
 
 
 @dataclass
@@ -41,7 +58,7 @@ class Report:
     def add(self, level: str, stage: str, code: str, detail: str = "",
             line: int | None = None) -> None:
         assert level in LEVELS, level
-        self.items.append(Item(level, stage, code, detail, line))
+        self.items.append(Item(level, stage, code, strip_dirs(detail), line))
 
     def info(self, stage: str, code: str, detail: str = "", line: int | None = None) -> None:
         self.add("info", stage, code, detail, line)
