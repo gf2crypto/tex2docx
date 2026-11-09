@@ -1,0 +1,15 @@
+# Круг tex -> docx -> tex -> docx не меняет документ (tests/roundtrip, стресс-прогон 2026-11-09).
+# Здесь — только первый круг tex2docx; устойчивость проверяет tests/roundtrip/test_roundtrip.py.
+contains:
+  - "1 Разделители"
+  - "Лемма 1."
+  - "Второй пункт, см. лемму 1."
+  - "Ссылки (4), (1)–(3) и"   # номер формулы в сноске — из .aux
+  - "\t(5)"
+math_min: 8
+styles: [Theorem, Equation]
+report_absent:
+  - pandoc.math-as-text
+  - pandoc.math-as-image
+  - crossref.unresolved
+  - equations.unresolved

@@ -23,7 +23,7 @@ from ..docxprobe import DocxProbe
 
 CORPUS = Path(__file__).parents[1] / "corpus"
 # cases whose body can be swapped (single file, no personal texmf, pdflatex)
-CASES = ["basic", "numbering", "thmtools", "livenumbers", "thebib", "template"]
+CASES = ["basic", "numbering", "thmtools", "livenumbers", "thebib", "template", "roundtrip-stress"]
 
 needs_all = pytest.mark.skipif(
     importlib.util.find_spec("docx2tex") is None

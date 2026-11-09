@@ -132,6 +132,47 @@ local function split_markers(inlines)
   return changed and out or nil
 end
 
+-- U+E004 (stages/prepare.py): the paragraph continues the list item before it (a theorem
+-- or a second paragraph inside \item); pandoc made a list of its own out of it
+local MC = '\u{E004}'
+
+local function is_list(b) return b and (b.t == 'BulletList' or b.t == 'OrderedList') end
+
+-- strip the marker from the first inline of an item; true when it was there
+local function take_continuation(blocks)
+  local b = blocks[1]
+  while b and b.t == 'Div' do b = b.content[1] end
+  if not b or (b.t ~= 'Para' and b.t ~= 'Plain') then return false end
+  local first = b.content[1]
+  if not first or first.t ~= 'Str' or first.text:sub(1, #MC) ~= MC then return false end
+  first.text = first.text:sub(#MC + 1)
+  if first.text == '' then b.content:remove(1) end
+  return true
+end
+
+local function merge_continuations(blocks)
+  local out, open, changed = pandoc.List(), nil, false
+  for _, b in ipairs(blocks) do
+    local prev = out[#out]
+    if is_list(b) and is_list(prev) and take_continuation(b.content[1]) then
+      -- every paragraph of this pseudo-list goes into the last item of the list before
+      local last = prev.content[#prev.content]
+      for k, item in ipairs(b.content) do
+        if k > 1 then take_continuation(item) end
+        last:extend(item)
+      end
+      open, changed = prev, true
+    elseif is_list(b) and open and prev == open and prev.t == b.t then
+      prev.content:extend(b.content)  -- the list goes on after the continuation
+      changed = true
+    else
+      out:insert(b)
+      open = nil
+    end
+  end
+  return changed and out or nil
+end
+
 local function is_label(x) return x.t == 'Span' and x.classes:includes('t2d-label') end
 
 -- the label a marker stands for: resolved at once, or (Word's own cross-reference bookmarks
@@ -260,8 +301,12 @@ local function strip_matrix(tex)
   local inner = tex:match('^%s*\\begin{matrix}%s*(.-)%s*\\end{matrix}%s*$')
     or tex:match('^%s*\\begin{aligned}%s*(.-)%s*\\end{aligned}%s*$')  -- pandoc 3.12
   if not inner then return tex, false, false end
-  local rows = inner:find('\\\\') ~= nil
-  return inner, (not rows) and inner:find('&') ~= nil, rows
+  -- only top-level & and \\ count: a line with cases/pmatrix in it is still one align line
+  local top, n = inner, 0
+  repeat top, n = top:gsub('\\begin(%b{}).-\\end%1', '') until n == 0
+  top = top:gsub('%b{}', '{}')
+  local rows = top:find('\\\\') ~= nil
+  return inner, (not rows) and top:find('&') ~= nil, rows
 end
 
 -- Equation paragraph: formula, then the number "(2.1)" / a tag "(A)" / "B" (tex2docx
@@ -903,9 +948,19 @@ local function map_math_chars(s)
   return changed and table.concat(out) or nil
 end
 
+-- texmath reads an empty OMML delimiter as "\left. \ " / "\right.\ "; written back, the
+-- control space is a space run inside the delimiter and comes back doubled next round
+local function strip_delimiter_spaces(s)
+  local n, total = 0, 0
+  repeat s, n = s:gsub('\\left%.%s*\\%s', '\\left. '); total = total + n until n == 0
+  repeat s, n = s:gsub('\\right%.%s*\\%s', '\\right.'); total = total + n until n == 0
+  return s, total
+end
+
 local function unicode_math(m)
-  local s = map_math_chars(m.text)
-  if s then m.text = s; return m end
+  local s = map_math_chars(m.text) or m.text
+  local stripped, n = strip_delimiter_spaces(s)
+  if stripped ~= m.text then m.text = stripped; return m end
 end
 
 local function unicode_text(str)
@@ -1327,6 +1382,12 @@ function Pandoc(doc)
     if attrs.title then theorem_envs[lower(attrs.title)] = env end
   end
 
+  -- 0. list item continuations back into their items; stray continuation markers dropped
+  doc = doc:walk { Blocks = merge_continuations }
+  doc = doc:walk { Str = function(x)
+    if x.text:find(MC, 1, true) then x.text = x.text:gsub(MC, ''); return x end
+  end }
+
   -- 1. markers -> label/tab spans; pandoc's anchors dropped; images without attributes
   doc = doc:walk {
     Inlines = split_markers,
@@ -1434,6 +1495,20 @@ function Pandoc(doc)
   if has_bib then doc = doc:walk { Inlines = cite_inlines } end
   -- Unicode that texmath and the writer leave as is and pdflatex cannot typeset
   doc = doc:walk { Math = unicode_math, Str = unicode_text }
+  -- footnotes: Word starts each with a space after the mark; equations, theorems inside
+  -- are processed like the body's (labels of formulas in footnotes come back)
+  doc = doc:walk { Note = function(note)
+    local first = note.content[1]
+    while first and first.t == 'Div' do first = first.content[1] end
+    if first and (first.t == 'Para' or first.t == 'Plain') then
+      local c = first.content
+      -- the space and the mark's own style span ("Footnote Reference", blank) go
+      while c[1] and (c[1].t == 'Space' or ((c[1].t == 'Str' or c[1].t == 'Span')
+                      and trim(stringify(c[1])) == '')) do c:remove(1) end
+    end
+    note.content = pandoc.Blocks(process(note.content))
+    return note
+  end }
 
   -- 4. blocks
   local blocks = front_matter(doc.meta)

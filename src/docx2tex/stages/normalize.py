@@ -34,7 +34,7 @@ RULES: list[tuple[str, str]] = [
     (r"[\u200b\u200c\u200d\ufeff]", ""),         # zero-width
     # our own environments: no blank line right after \\begin{...} and before \\end{...}
     (r"(\\begin\{[a-z*]+\}(?:\[[^\]\n]*\])?(?:\\label\{[^}]*\})*)\n\n", r"\1\n"),
-    (r"\n\n(\\end\{[a-z*]+\})", r"\n\1"),
+    (r"\n\n([ \t]*\\end\{[a-z*]+\})", r"\n\1"),
     # a sentence that goes on after a display formula ("где ...") is the same paragraph
     (r"(\\end\{(?:equation|align|gather|multline|subequations)\*?\}|\\\])\n\n(?=[a-zа-яё])", r"\1\n"),
     (r"[ \t]+\n", "\n"),
