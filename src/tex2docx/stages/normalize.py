@@ -1,6 +1,7 @@
 """Stage 5: rewrite constructs pandoc misreads, in ctx.tex only.
 
 Status: implemented (M0): babel shorthands of Russian/Ukrainian.
+\\qedhere is dropped (texmath does not know it: the formula would go as a picture).
 pandoc renders '"---' as a literal quote plus dash; LaTeX never shows the quote.
 M1: alignat/flalign become align (pandoc leaves alignat's column count in the
 formula text and does not know flalign at all); numbering is the same.
@@ -81,8 +82,16 @@ CREF: list[tuple[str, str]] = [
 ]
 
 
+# \qedhere only moves the end-of-proof sign into the last formula; texmath does not know
+# it and the whole formula would become a picture. The sign is placed by postprocess.
+QEDHERE: list[tuple[str, str]] = [
+    (r"(?<!\\)\\qedhere\b", ""),
+]
+
+
 def normalize_text(text: str) -> str:
-    for pat, rep in BABEL_SHORTHANDS + MATH_ENVS + CREF + BIBLIOGRAPHY + ABSTRACT + FLOATS:
+    rules = BABEL_SHORTHANDS + MATH_ENVS + CREF + BIBLIOGRAPHY + ABSTRACT + FLOATS + QEDHERE
+    for pat, rep in rules:
         text = re.sub(pat, rep, text)
     return theorems_to_amsthm(text)
 

@@ -174,6 +174,12 @@ def test_babel_shorthands():
     assert normalize_text(r'\"o') == r'\"o'
 
 
+def test_qedhere_is_dropped():
+    # texmath does not know \qedhere: the formula would go as a picture
+    assert normalize_text("\\[ |C| \\le q^{n-d+1}. \\qedhere \\]") == "\\[ |C| \\le q^{n-d+1}.  \\]"
+    assert normalize_text("\\\\qedhere") == "\\\\qedhere"  # a line break, then text
+
+
 def test_normalize_guillemets_and_second_title():
     assert normalize_text('АО <<НПК <<Криптонит>>') == "АО «НПК «Криптонит»"
     src = "\\title{A}\\author{B}\\maketitle\n\\title{Eng {t}}\n\\author{C}\\maketitleeng\n"
