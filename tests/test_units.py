@@ -506,6 +506,15 @@ def test_docx2tex_normalize_drops_pandocbounded():
     assert normalize_text(out) == out  # idempotent
 
 
+def test_docx2tex_packages_of_folded_macros():
+    from docx2tex.stages.emit import needed_packages
+
+    macros = {"\\F": "\\mathbb{F}", "\\Lie": "\\mathfrak{g}"}
+    assert needed_packages(r"$\F_q^n$", macros) == ["amsmath", "amssymb"]
+    assert needed_packages(r"$\Fq$", macros) == []  # another name, not \F
+    assert needed_packages(r"\ul{x} $\begin{pmatrix} 1 \end{pmatrix}$") == ["amsmath", "soul"]
+
+
 def test_docx2tex_unsupported_chars_for_pdflatex():
     from docx2tex.stages.emit import unsupported_chars
 

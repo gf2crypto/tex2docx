@@ -52,7 +52,11 @@ def unsupported_chars(tex: str) -> list[str]:
 BABEL = {"russian": "russian", "ukrainian": "ukrainian", "english": "english"}
 
 
-def needed_packages(tex: str) -> list[str]:
+def needed_packages(tex: str, macros: dict[str, str] | None = None) -> list[str]:
+    """Packages the fragment uses; folded macros (\\F for \\mathbb{F}) count with their bodies."""
+    used = [body for name, body in (macros or {}).items()
+            if re.search(re.escape(name) + r"(?![A-Za-z])", tex)]
+    tex = "\n".join([tex, *used])
     out: list[str] = []
     for pat, pkg in PACKAGE_HINTS:
         if re.search(pat, tex) and pkg not in out:
@@ -107,7 +111,7 @@ def convert_image(src: Path, dest: Path, ctx: Context) -> str:
 
 
 def run(ctx: Context) -> None:
-    ctx.packages = needed_packages(ctx.tex)
+    ctx.packages = needed_packages(ctx.tex, {**ctx.sidecar.macros, **ctx.config.macros})
     for p in ctx.packages:
         ctx.report.info(STAGE, "emit.package", p)
     for env, title in ctx.theorem_envs_used.items():
