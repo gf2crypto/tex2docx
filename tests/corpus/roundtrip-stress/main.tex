@@ -1,0 +1,78 @@
+% Синтетический кейс: то, что на круге tex -> docx -> tex -> docx менялось от круга к кругу
+% (стресс-прогон 2026-11-09): пустые разделители \left. \right., норма \lVert, align со строкой
+% \notag и строкой с cases, теорема внутри пункта списка, формула с меткой в сноске,
+% доказательства с формулами (\qedhere, свое имя), теорема, следствие и утверждение подряд.
+\documentclass[12pt]{article}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amsthm}
+
+\newtheorem{theorem}{Теорема}[section]
+\newtheorem{corollary}{Следствие}[theorem]
+\newtheorem{lemma}{Лемма}
+\newtheorem{proposition}[theorem]{Утверждение}
+
+\begin{document}
+
+\section{Разделители}
+
+Норма $\left\lVert v \right\rVert$, производная $\left.\frac{df}{dx}\right|_{x=0}$
+и скобка $\left\{ a \right.$.
+
+\begin{align}
+  f(x) &= x^2 + 2x + 1 \label{eq:f}\\
+       &= (x+1)^2 \notag\\
+  g(x) &= \begin{cases} 0, & x < 0,\\ x, & x \ge 0 \end{cases} \label{eq:g}\\
+  h(x) &= \left\lVert x \right\rVert. \label{eq:h}
+\end{align}
+
+\section{Списки и сноски}
+
+\begin{itemize}
+  \item Первый пункт:
+  \begin{lemma}\label{lem:a}
+  Лемма в пункте списка.
+  \end{lemma}
+  \item Второй пункт, см. лемму~\ref{lem:a}.
+\end{itemize}
+
+Текст со сноской\footnote{Сноска с формулой
+\begin{equation}\label{eq:fn}
+  a = b
+\end{equation}
+и текстом после.}. Ссылки \eqref{eq:fn}, \eqref{eq:f}--\eqref{eq:h} и
+\begin{equation}\label{eq:last}
+  c = d.
+\end{equation}
+
+\section{Доказательства}
+
+\begin{theorem}\label{thm:s}
+Утверждение $d \le n-k+1$.
+\end{theorem}
+
+\begin{proof}
+Рассмотрим проекцию, тогда
+\[
+  |C| \le q^{n-d+1}. \qedhere
+\]
+\end{proof}
+
+\begin{corollary}\label{cor:mds}
+Код MDS.
+\end{corollary}
+
+\begin{proposition}\label{prop:b}
+Утверждение со ссылкой на \eqref{eq:f}.
+\end{proposition}
+
+\begin{proof}[Доказательство теоремы~\ref{thm:s}]
+Сначала
+\begin{equation}\label{eq:pr}
+  x = y,
+\end{equation}
+затем конец.
+\end{proof}
+
+\end{document}

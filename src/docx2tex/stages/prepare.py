@@ -11,7 +11,15 @@ Status: implemented (M1). The source docx is never modified (CLAUDE.md invariant
     result as text: pandoc 3.1 does not read REF fields, 3.12 does, so neither is relied on;
   * other fields (SEQ numbers, live mode) are flattened to their result runs;
   * a tab becomes U+E002 (pandoc turns tabs into spaces; the algorithm box uses tabs
-    for the nesting level).
+    for the nesting level);
+  * a paragraph numbered by a list level whose bullet is blank (pandoc writes those for
+    the second and further paragraphs of a list item, e.g. a theorem inside \\item) starts
+    with U+E004: pandoc reads it as a list of its own; the filter puts it back into the item;
+  * upright Latin letters in a formula (m:sty p: \\operatorname{rank}, \\mathrm{d}) go between
+    U+E005 and U+E006: texmath knows only the usual function names and makes the rest
+    italic letters ("rankG"); the filter writes \\operatorname / \\mathrm;
+  * a formula delimiter U+2225 (texmath writes it for \\lVert) becomes U+2016: texmath
+    reads only the latter as a delimiter, the former as \\left. \\parallel.
 """
 
 from __future__ import annotations
@@ -24,7 +32,13 @@ from pathlib import Path
 from lxml import etree
 
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 MARK_START, MARK_END, MARK_TAB, MARK_CLOSE = "\ue000", "\ue001", "\ue002", "\ue003"
+MARK_CONT = "\ue004"
+MARK_UP_OPEN, MARK_UP_CLOSE = "\ue005", "\ue006"
+_UPRIGHT = re.compile(r"[A-Za-z](?:[A-Za-z\u2006\u2009]*[A-Za-z])?")
+# parts with paragraphs pandoc reads: the body and the notes (formulas, labels in footnotes)
+TEXT_PARTS = ("word/document.xml", "word/footnotes.xml", "word/endnotes.xml")
 
 
 def _q(tag: str) -> str:
@@ -168,27 +182,92 @@ def _tabs(body: etree._Element) -> None:
         r.replace(tab, t)
 
 
-def prepare_xml(xml: bytes) -> tuple[bytes, int]:
+def continuation_levels(numbering: bytes | None) -> set[tuple[str, str]]:
+    """(numId, ilvl) of list levels with a bullet that prints nothing: item continuations."""
+    if not numbering:
+        return set()
+    root = etree.fromstring(numbering)
+    blank: dict[str, set[str]] = {}
+    for a in root.iter(_q("abstractNum")):
+        for lvl in a.iter(_q("lvl")):
+            fmt, text = lvl.find(_q("numFmt")), lvl.find(_q("lvlText"))
+            if (fmt is not None and fmt.get(_q("val")) == "bullet" and text is not None
+                    and not (text.get(_q("val")) or "").strip()):
+                blank.setdefault(a.get(_q("abstractNumId")), set()).add(lvl.get(_q("ilvl")))
+    out = set()
+    for num in root.iter(_q("num")):
+        abstract = num.find(_q("abstractNumId"))
+        if abstract is not None:
+            for ilvl in blank.get(abstract.get(_q("val")), ()):
+                out.add((num.get(_q("numId")), ilvl))
+    return out
+
+
+def _continuations(body: etree._Element, levels: set[tuple[str, str]]) -> None:
+    for p in body.iter(_q("p")):
+        num_pr = p.find(f"{_q('pPr')}/{_q('numPr')}")
+        if num_pr is None:
+            continue
+        num_id, ilvl = num_pr.find(_q("numId")), num_pr.find(_q("ilvl"))
+        key = (num_id.get(_q("val")) if num_id is not None else None,
+               ilvl.get(_q("val")) if ilvl is not None else "0")
+        if key in levels:
+            r = etree.Element(_q("r"))
+            etree.SubElement(r, _q("t")).text = MARK_CONT
+            _insert_at_start(p, r)
+
+
+def _upright_letters(body: etree._Element) -> None:
+    for r in body.iter(f"{{{M}}}r"):
+        rpr = r.find(f"{{{M}}}rPr")
+        if rpr is None or any(rpr.find(f"{{{M}}}{tag}") is not None for tag in ("nor", "scr")):
+            continue  # \text{...}: plain text; \mathfrak, \mathbb: texmath reads the script
+        sty = rpr.find(f"{{{M}}}sty")
+        if sty is None or sty.get(f"{{{M}}}val") != "p":
+            continue
+        for t in r.iter(f"{{{M}}}t"):
+            if t.text and _UPRIGHT.fullmatch(t.text):
+                t.text = MARK_UP_OPEN + t.text + MARK_UP_CLOSE
+
+
+def _math_delimiters(body: etree._Element) -> None:
+    for tag in ("begChr", "sepChr", "endChr"):
+        for el in body.iter(f"{{{M}}}{tag}"):
+            if el.get(f"{{{M}}}val") == "\u2225":
+                el.set(f"{{{M}}}val", "\u2016")
+
+
+def prepare_xml(xml: bytes, continuations: set[tuple[str, str]] | None = None) -> tuple[bytes, int]:
     root = etree.fromstring(xml)
     body = root.find(_q("body"))
-    if body is None:
-        return xml, 0
+    if body is None:  # footnotes.xml / endnotes.xml: the notes are the body
+        if root.tag not in (_q("footnotes"), _q("endnotes")):
+            return xml, 0
+        body = root
     n = _mark_bookmarks(body)
     _simple_fields(body)
     for p in body.iter(_q("p")):
         _complex_fields(p)
     _tabs(body)
+    _math_delimiters(body)
+    _upright_letters(body)
+    if continuations:
+        _continuations(body, continuations)
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True), n
 
 
 def prepare_docx(source: Path, dest: Path) -> int:
-    """Copy source to dest with word/document.xml rewritten; returns the number of
+    """Copy source to dest with the body and the notes rewritten; returns the number of
     bookmarks marked."""
     with zipfile.ZipFile(source) as zin, zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zout:
         n = 0
+        names = zin.namelist()
+        levels = continuation_levels(
+            zin.read("word/numbering.xml") if "word/numbering.xml" in names else None)
         for item in zin.infolist():
             data = zin.read(item.filename)
-            if item.filename == "word/document.xml":
-                data, n = prepare_xml(data)
+            if item.filename in TEXT_PARTS:
+                data, k = prepare_xml(data, levels)
+                n += k
             zout.writestr(item, data)
     return n
