@@ -19,7 +19,7 @@ from pathlib import Path
 from ..bibliography import ABSTRACT_TITLES, BIB_TITLES, KEYWORDS_TITLES, bib_files, is_bibtex
 from ..context import Context
 from ..texmf import personal_packages
-from ..texscan import document_language
+from ..texscan import document_language, read_group
 from ..tools import ToolError, require
 from ..tools import run as run_tool
 from . import StageError, mathimg
@@ -35,6 +35,30 @@ CAPTION_NAMES = {  # babel language -> (figure, table, separator after the numbe
     "english": ("Figure", "Table", ":"),
 }
 ALGORITHM_NAMES = {"russian": "Алгоритм", "ukrainian": "Алгоритм", "english": "Algorithm"}
+PROOF_NAMES = {"russian": "Доказательство", "ukrainian": "Доведення", "english": "Proof"}  # babel
+_PROOFNAME = re.compile(r"(?<!\\)\\(?:renewcommand|def)\s*\{?\s*\\proofname\s*\}?\s*(?=\{)")
+
+
+def proof_name(ctx: Context) -> str:
+    """config.proof_name, else the preamble's \\renewcommand{\\proofname}{...} (the last one
+    wins, as in TeX), else the babel name of the document language. One name per document:
+    a redefinition inside the body is not followed (it would rename earlier proofs too)."""
+    if ctx.config.proof_name:
+        return ctx.config.proof_name
+    name = None
+    at = ctx.tex.find("\\begin{document}")
+    preamble = ctx.tex[:at] if at >= 0 else ctx.tex
+    for m in _PROOFNAME.finditer(preamble):
+        try:
+            body, _ = read_group(preamble, m.end())
+        except ValueError:
+            continue
+        if body.strip() and "\\" not in body:  # macros in it: TeX would expand, we cannot
+            name = body.strip()
+    if name:
+        return name
+    lang, _ = document_language(ctx.tex)
+    return PROOF_NAMES.get(lang, PROOF_NAMES["english"])
 
 
 _CREFNAME = re.compile(r"(?<!\\)\\(crefname|Crefname)\s*\{(\w+)\}\s*\{([^{}]*)\}\s*\{([^{}]*)\}")
@@ -75,7 +99,8 @@ def caption_names(ctx: Context) -> dict[str, str]:
             "bibliography": BIB_TITLES.get(lang, BIB_TITLES["english"]),
             "abstract": ABSTRACT_TITLES.get(lang, ABSTRACT_TITLES["english"]),
             "algorithm": ALGORITHM_NAMES.get(lang, ALGORITHM_NAMES["english"]),
-            "keywords": KEYWORDS_TITLES.get(lang, KEYWORDS_TITLES["english"])}
+            "keywords": KEYWORDS_TITLES.get(lang, KEYWORDS_TITLES["english"]),
+            "proof": proof_name(ctx)}
 
 _SKIPPED = re.compile(r"Skipped '(.+?)' at (.+?) line (\d+)")
 _MATH_FAIL = re.compile(r"^\[WARNING\] Could not convert TeX math")
@@ -204,7 +229,7 @@ def run(ctx: Context) -> None:
         "types": {k: v.cref_type for k, v in ctx.labels.items() if v.cref_type},
         "cref": cref_names(ctx),
         "theorems": {k: asdict(v) for k, v in ctx.theorems.items()},
-        "proof_name": ctx.config.proof_name,
+        "proof_name": proof_name(ctx),
         "styles": ctx.config.theorem_styles,
         "names": caption_names(ctx),
         "bibcites": ctx.bibcites,

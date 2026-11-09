@@ -14,7 +14,8 @@ from ..context import Context
 from ..tools import ToolError, latexmk, log_errors
 
 STAGE = "latex"
-_FLAT_LINE = re.compile(r"^\S*[/\\]?main\.tex:(\d+):")
+# The work folder path may hold spaces and a drive letter.
+_FLAT_LINE = re.compile(r"^(?:[^:]*[/\\]|[A-Za-z]:[^:]*[/\\])?main\.tex:(\d+):")
 
 
 def located(err: str, ctx: Context) -> tuple[str, int | None]:

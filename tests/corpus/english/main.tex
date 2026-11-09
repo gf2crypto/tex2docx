@@ -1,0 +1,31 @@
+% Synthetic case: an English article (stress run 2026-11-09, items 25 and 27):
+% math inside \tag and its \eqref must become Word formulas, not text with dollars;
+% the proof heading follows the document language (\renewcommand{\proofname}: test_units).
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm}
+
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+
+\begin{equation}\label{eq:star}
+  a = b \tag{$\ast$}
+\end{equation}
+\begin{equation}
+  c = d \tag*{A$'$}
+\end{equation}
+\begin{equation}\label{eq:t}
+  e = f \tag{\textbf{T}}
+\end{equation}
+By \eqref{eq:star} and \eqref{eq:t} the claim follows.
+
+\begin{theorem}\label{thm:a}
+Every $x$ is $x$.
+\end{theorem}
+
+\begin{proof}
+Trivial.
+\end{proof}
+
+\end{document}

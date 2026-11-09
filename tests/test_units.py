@@ -15,7 +15,7 @@ from tex2docx.stages.figures import outermost_spans
 from tex2docx.stages.flatten import flatten_lines, flatten_text, read_source, source_encoding
 from tex2docx.stages.normalize import normalize_text, second_title_block
 from tex2docx.stages.macros import extract_definitions
-from tex2docx.stages.pandoc_run import collect_pandoc_messages
+from tex2docx.stages.pandoc_run import collect_pandoc_messages, proof_name
 from tex2docx.stages.postprocess import W, nbsp_text, process_document
 from tex2docx.stages.theorems import scan_decls, theorems_to_amsthm
 from tex2docx.texmf import expand_braces, package_requests
@@ -34,6 +34,8 @@ def test_read_group_nested_and_escaped():
 def test_strip_tex():
     assert strip_tex(r"\relax 1.2") == "1.2"
     assert strip_tex(r"\textup {(i)}") == "(i)"
+    assert strip_tex(r"{$\ast $}") == r"$\ast $"  # \tag{$\ast$}, stress run item 25
+    assert strip_tex(r"\textbf {A}$'$") == "A$'$"
 
 
 def test_blank_comment_lines_keeps_numbering():
@@ -58,6 +60,28 @@ def test_unwrap_log():
     long = "x" * 79
     assert unwrap_log(long + "\ntail\nnext") == [long + "tail", "next"]
     assert unwrap_log("a\nb") == ["a", "b"]
+
+
+def test_report_drops_absolute_dirs():
+    """Stress run, item 24: latex.log carried the work folder path with the user name."""
+    r = Report()
+    for detail in [
+        "/Users/ivan/Docs/wd2/check/main.tex:103: LaTeX Error: Unicode character",
+        "/Users/Ivan Petrov/My Docs/wd/main.tex:5: Undefined control sequence.",
+        r"C:\Users\Ivan Petrov\wd\main.tex:5: Undefined control sequence.",
+        "! LaTeX Error: File `/Users/Ivan Petrov/tex/foo.sty' not found.",
+    ]:
+        r.warn("latex", "latex.log", detail)
+    details = [i.detail for i in r.items]
+    assert details == [
+        "main.tex:103: LaTeX Error: Unicode character",
+        "main.tex:5: Undefined control sequence.",
+        "main.tex:5: Undefined control sequence.",
+        "! LaTeX Error: File `foo.sty' not found.",
+    ]
+    for keep in [r"! Undefined control sequence \foo\bar.", "images/fig.png", "lemma:Лемма"]:
+        r.warn("x", "y", keep)
+        assert r.items[-1].detail == keep
 
 
 # --- aux ---------------------------------------------------------------------
@@ -314,6 +338,26 @@ def test_package_requests():
 
 
 # --- pandoc message collection ----------------------------------------------
+
+def test_proof_name(tmp_path: Path):
+    """Stress run, item 27: the proof heading was Russian in any language."""
+    def name(tex: str, **cfg) -> str:
+        ctx = Context(source=tmp_path / "m.tex", output=tmp_path / "m.docx",
+                      workdir=tmp_path, config=Config(**cfg))
+        ctx.tex = tex
+        return proof_name(ctx)
+    doc = "\\begin{document}\nText.\n\\end{document}\n"
+    assert name("\\usepackage[english]{babel}\n" + doc) == "Proof"
+    assert name("\\usepackage[english,russian]{babel}\n" + doc) == "Доказательство"
+    assert name("\\usepackage[ukrainian]{babel}\n" + doc) == "Доведення"
+    assert name("\\usepackage[russian]{babel}\n" + doc, proof_name="Док-во") == "Док-во"
+    renew = "\\usepackage[english]{babel}\n\\renewcommand{\\proofname}{Sketch}\n"
+    assert name(renew + doc) == "Sketch"
+    assert name(renew + "\\renewcommand\\proofname{Idea}\n" + doc) == "Idea"
+    assert name(renew.replace("Sketch", "\\textit{S}") + doc) == "Proof"  # macros: not ours
+    body = doc.replace("Text.", "\\renewcommand{\\proofname}{Later}")
+    assert name("\\usepackage[english]{babel}\n" + body) == "Proof"  # body: not followed
+
 
 def test_collect_pandoc_messages(tmp_path: Path):
     ctx = Context(source=tmp_path / "m.tex", output=tmp_path / "m.docx",
