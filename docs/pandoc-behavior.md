@@ -28,6 +28,8 @@
 
 - `proof` → `Div(classes={"proof"})`, заголовок `Emph[Str "Proof."]` — всегда по-английски,
   независимо от babel. В конце абзаца `Str "\160◻"` (U+25FB).
+  `theorems.lua` меняет заголовок на имя по языку (`pandoc_run.proof_name`); переопределение
+  `\proofname` pandoc не видит, его ищем в преамбуле сами.
 
 ## Ссылки
 
