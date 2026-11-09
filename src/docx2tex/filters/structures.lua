@@ -32,6 +32,7 @@ local theorem_titles = {} -- env -> title as declared
 local names = {}
 local cites = {}
 local has_bib = false
+local bib_count = 0  -- entries in the bibliography list (0: unknown)
 local numbered_levels = {}
 local link_labels = {}   -- "(2.5)" -> label, from the references in the text (for subequations)
 local header_labels = {} -- heading identifier -> its label (pandoc 3.12 points links at the identifier)
@@ -584,13 +585,23 @@ local function emit_figure(img, caption_para)
   return raw(table.concat(lines, '\n'))
 end
 
+-- a line break typed in a cell: \\ would end the table row, so the lines go into a
+-- one-column tabular of their own (standard LaTeX, no makecell)
+local CELL_BREAK = '\u{E0FF}'
+
 local function cell_text(cell)
   local blocks = cell.contents or cell.content
   local parts = {}
+  local broken = false
   for _, b in ipairs(blocks) do
+    b = b:walk { LineBreak = function() broken = true; return pandoc.Str(CELL_BREAK) end }
     parts[#parts + 1] = pandoc.write(pandoc.Pandoc({ b }), 'latex'):gsub('\n$', '')
   end
-  return table.concat(parts, ' ')
+  local text = table.concat(parts, ' ')
+  if broken then
+    text = '\\begin{tabular}[t]{@{}l@{}}' .. text:gsub('%s*' .. CELL_BREAK .. '%s*', '\\\\') .. '\\end{tabular}'
+  end
+  return text
 end
 
 -- plain tabular with l columns and \hline, when no cell spans; nil otherwise
@@ -859,7 +870,67 @@ local function is_bib_header(b)
   return false
 end
 
+-- ---------------------------------------------------------------------------
+-- Unicode pdflatex cannot take (T2A + utf8): symbols texmath leaves in formulas, signs in text
+
+local MATH_CHARS = {
+  ['\u{2284}'] = '\\not\\subset', ['\u{2285}'] = '\\not\\supset', ['\u{220C}'] = '\\not\\ni',
+  ['\u{2262}'] = '\\not\\equiv', ['\u{2241}'] = '\\not\\sim', ['\u{2244}'] = '\\not\\simeq',
+  ['\u{226E}'] = '\\not<', ['\u{226F}'] = '\\not>', ['\u{2209}'] = '\\notin',
+  ['\u{2212}'] = '-', ['\u{2216}'] = '\\setminus', ['\u{2032}'] = "'",
+}
+local TEXT_CHARS = {
+  ['\u{2212}'] = '$-$', ['\u{2264}'] = '$\\leq$', ['\u{2265}'] = '$\\geq$', ['\u{2260}'] = '$\\neq$',
+  ['\u{2248}'] = '$\\approx$', ['\u{00D7}'] = '$\\times$', ['\u{2192}'] = '$\\to$', ['\u{221E}'] = '$\\infty$',
+}
+
+-- a command ending in a letter gets a space before a following letter (\not\subset A)
+local function map_math_chars(s)
+  local out, need_space, changed = {}, false, false
+  for _, c in utf8.codes(s) do
+    local ch = utf8.char(c)
+    local rep = MATH_CHARS[ch]
+    if need_space and ch:match('^%a$') then out[#out + 1] = ' ' end
+    need_space = false
+    if rep then
+      out[#out + 1] = rep
+      need_space = rep:match('%a$') ~= nil
+      changed = true
+    else
+      out[#out + 1] = ch
+    end
+  end
+  return changed and table.concat(out) or nil
+end
+
+local function unicode_math(m)
+  local s = map_math_chars(m.text)
+  if s then m.text = s; return m end
+end
+
+local function unicode_text(str)
+  local out, buf, changed = pandoc.List(), {}, false
+  for _, c in utf8.codes(str.text) do
+    local ch = utf8.char(c)
+    local rep = TEXT_CHARS[ch]
+    if rep then
+      if #buf > 0 then out:insert(pandoc.Str(table.concat(buf))); buf = {} end
+      out:insert(pandoc.RawInline('latex', rep))
+      changed = true
+    else
+      buf[#buf + 1] = ch
+    end
+  end
+  if not changed then return nil end
+  if #buf > 0 then out:insert(pandoc.Str(table.concat(buf))) end
+  return out
+end
+
 local function cite_key(n) return cites[n] or ('bib:' .. n) end
+
+-- "[1–3]": a range of citations (hyphen, en dash, em dash)
+local RANGE_DASH = '[%-\u{2013}\u{2014}]+'
+local MAX_RANGE = 50
 
 local function emit_thebibliography(entries)
   local widest = #entries < 10 and '9' or (#entries < 100 and '99' or '999')
@@ -887,8 +958,11 @@ local function cite_inlines(inlines)
       local ok = true
       for part in (inner .. ','):gmatch('%s*([^,]-)%s*,') do
         local p = trim(part)
+        local a, b = p:match('^(%d+)%s*' .. RANGE_DASH .. '%s*(%d+)$')
         if p:match('^%d+$') then
           nums[#nums + 1] = p
+        elseif a and tonumber(a) < tonumber(b) and tonumber(b) - tonumber(a) <= MAX_RANGE then
+          for n = tonumber(a), tonumber(b) do nums[#nums + 1] = tostring(n) end
         elseif #nums > 0 and not note then
           note = p
         else
@@ -896,17 +970,25 @@ local function cite_inlines(inlines)
           break
         end
       end
+      -- a number past the end of the list is not a citation we can resolve: keep the text
+      for _, n in ipairs(nums) do
+        if ok and bib_count > 0 and tonumber(n) > bib_count then
+          report('warning', 'cite.unknown-number', n)
+          ok = false
+        end
+      end
+      -- the text before the brackets is kept either way
+      pieces[#pieces + 1] = text:sub(pos, s - 1)
       if ok and #nums > 0 then
         changed = true
-        pieces[#pieces + 1] = text:sub(pos, s - 1)
         local keys = {}
         for _, n in ipairs(nums) do keys[#keys + 1] = cite_key(n) end
         local opt = note and ('[' .. note:gsub(NBSP, '~') .. ']') or ''
         pieces[#pieces + 1] = { '\\cite' .. opt .. '{' .. table.concat(keys, ',') .. '}' }
-        pos = e + 1
       else
-        pos = e
+        pieces[#pieces + 1] = text:sub(s, e)
       end
+      pos = e + 1
     end
     pieces[#pieces + 1] = text:sub(pos)
     for _, p in ipairs(pieces) do
@@ -1205,7 +1287,9 @@ local function front_matter(meta)
       '% \\title{' .. write_inlines(meta.title) .. '}' }
     if meta.author then
       local authors = meta.author
-      if authors.t == 'MetaList' or (type(authors) == 'table' and authors[1] and authors[1].t == 'MetaInlines') then
+      -- several authors: MetaList in pandoc 2, a plain List of Inlines in pandoc 3
+      local kind = pandoc.utils.type(authors)
+      if kind == 'List' or authors.t == 'MetaList' then
         local parts = {}
         for _, a in ipairs(authors) do parts[#parts + 1] = write_inlines(a) end
         lines[#lines + 1] = '% \\author{' .. table.concat(parts, ' \\and ') .. '}'
@@ -1260,6 +1344,7 @@ function Pandoc(doc)
   -- without a label of their own (pandoc 3.12 hashes Div identifiers) take the first label
   -- found inside their extent (the theorem's own number, the figure's caption)
   has_bib = false
+  bib_count = 0
   numbered_levels = {}
   header_labels = {}
   name_labels = {}
@@ -1312,9 +1397,13 @@ function Pandoc(doc)
       if hl[1] and b.identifier ~= '' then header_labels[b.identifier] = hl[1] end
       local _, numbered = header_number(clean_inlines(b.content))
       if numbered then numbered_levels[b.level] = true end
-      if is_bib_header(b) and doc.blocks[i + 1] and doc.blocks[i + 1].t == 'OrderedList' then has_bib = true end
+      if is_bib_header(b) and doc.blocks[i + 1] and doc.blocks[i + 1].t == 'OrderedList' then
+        has_bib = true
+        bib_count = bib_count + #doc.blocks[i + 1].content
+      end
     elseif style_of(b) == 'Bibliography' then
       has_bib = true
+      bib_count = bib_count + 1
     end
   end
 
@@ -1343,6 +1432,8 @@ function Pandoc(doc)
     end,
   }
   if has_bib then doc = doc:walk { Inlines = cite_inlines } end
+  -- Unicode that texmath and the writer leave as is and pdflatex cannot typeset
+  doc = doc:walk { Math = unicode_math, Str = unicode_text }
 
   -- 4. blocks
   local blocks = front_matter(doc.meta)

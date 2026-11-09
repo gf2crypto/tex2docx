@@ -497,6 +497,22 @@ def test_simple_macros_and_fold_back():
     assert sorted(ambiguous) == ["\\matr", "\\vect"]  # two names, one body: left alone
 
 
+def test_docx2tex_normalize_drops_pandocbounded():
+    from docx2tex.stages.normalize import normalize_text
+
+    tex = r"знак \pandocbounded{\includegraphics[keepaspectratio]{media/image1.png}} в строке"
+    out = normalize_text(tex)
+    assert out == "знак \\includegraphics{images/image1.png} в строке\n"
+    assert normalize_text(out) == out  # idempotent
+
+
+def test_docx2tex_unsupported_chars_for_pdflatex():
+    from docx2tex.stages.emit import unsupported_chars
+
+    assert unsupported_chars("Текст — «елка» ü № … $x \\leq y$") == []
+    assert unsupported_chars("$A ⊄ B$, −5, α") == ["U+03B1", "U+2212", "U+2284"]
+
+
 # --- docx2tex --into: the main document and its .bib (M3) ----------------------
 
 def test_bib_parse_and_match():

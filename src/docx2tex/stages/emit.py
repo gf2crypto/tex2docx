@@ -3,6 +3,7 @@
 Status: implemented (M0). The fragment never carries \\usepackage or \\newtheorem:
 needed packages go to the report (emit.package) and theorem environments used go to
 emit.newtheorem, for the author to check against the main preamble.
+Characters pdflatex cannot typeset are reported as unicode.pdflatex (code points only).
 --standalone additionally writes <out>.standalone.tex with a minimal preamble.
 M2: pictures in formats LaTeX cannot include are converted (BMP/TIFF/GIF -> PNG with
 Pillow; EMF/WMF -> PDF with LibreOffice when present, else images.unsupported).
@@ -20,9 +21,15 @@ from ..context import Context
 STAGE = "emit"
 PACKAGE_HINTS: list[tuple[str, str]] = [
     (r"\\includegraphics", "graphicx"),
-    (r"\\begin\{(align|gather|multline|equation\*|cases|split)", "amsmath"),
-    (r"\\(mathbb|operatorname|text)\{", "amsmath"),
-    (r"\\mathbb\{", "amssymb"),
+    (r"\\begin\{(align|gather|multline|equation\*|cases|split|aligned|gathered|subequations"
+     r"|[pbBvV]?matrix)\b", "amsmath"),
+    (r"\\(mathbb|operatorname|text|boldsymbol|binom|[dt]frac|overset|underset|eqref|tag)\b",
+     "amsmath"),
+    (r"\\x(left|right)arrow\b", "amsmath"),
+    (r"\\(mathbb|mathfrak)\{", "amssymb"),
+    (r"\\(nleq|ngeq|nmid|nparallel|nsubseteq|nsupseteq|varnothing|leqslant|geqslant|lesssim"
+     r"|gtrsim|therefore|because|square|blacksquare|hslash|complement)\b", "amssymb"),
+    (r"\\(ul|st|hl|so)\{", "soul"),
     (r"\\(toprule|midrule|bottomrule)", "booktabs"),
     (r"\\begin\{proof\}|\\begin\{(theorem|lemma|definition|remark|corollary|proposition|example)\}", "amsthm"),
     (r"\\begin\{algorithmic\}", "algpseudocode"),
@@ -31,6 +38,17 @@ PACKAGE_HINTS: list[tuple[str, str]] = [
     (r"\\begin\{longtable\}", "longtable"),
     (r"\\multirow", "multirow"),
 ]
+# what pdflatex with T2A + utf8 typesets: ASCII, Latin-1 and Latin Extended-A, Cyrillic,
+# the usual punctuation (dashes, quotes, ellipsis), numero sign
+PDFLATEX_OK = re.compile(r"[\x00-\x7f\u00a0-\u017f\u0400-\u045f\u0490\u0491"
+                         r"\u2013\u2014\u2018\u2019\u201a\u201c\u201d\u201e\u2026\u2116]")
+
+
+def unsupported_chars(tex: str) -> list[str]:
+    """Code points pdflatex would stop on ("Unicode character ... not set up"), as U+XXXX."""
+    return sorted({f"U+{ord(c):04X}" for c in tex if not PDFLATEX_OK.match(c)})
+
+
 BABEL = {"russian": "russian", "ukrainian": "ukrainian", "english": "english"}
 
 
@@ -94,6 +112,9 @@ def run(ctx: Context) -> None:
         ctx.report.info(STAGE, "emit.package", p)
     for env, title in ctx.theorem_envs_used.items():
         ctx.report.info(STAGE, "emit.newtheorem", f"{env}:{title}")
+    if ctx.config.engine == "pdflatex":
+        for cp in unsupported_chars(ctx.tex):
+            ctx.report.warn(STAGE, "unicode.pdflatex", cp)
     md = ctx.main_doc
     if md is not None:  # --into: what the main document's preamble still lacks
         for p in ctx.packages:
