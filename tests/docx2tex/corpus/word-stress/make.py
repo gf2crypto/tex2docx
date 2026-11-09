@@ -7,7 +7,13 @@
 - underlined and struck-out runs (\\ul, \\st need soul), \\mathfrak and pmatrix without
   \\mathbb (amssymb, amsmath);
 - Unicode pdflatex cannot take: U+2284 in a formula, U+2212 in text;
-- a line break inside a table cell (\\\\ there ends the table row).
+- a line break inside a table cell (\\\\ there ends the table row);
+- tracked changes (pandoc accepts them silently);
+- upright operators in a formula (\\operatorname{rank}, \\bmod, \\mathrm{d}: texmath made them
+  italic letters);
+- numbers typed by hand: "formula <tab> (2.1)", bold "Лемма 2." with a reference
+  "леммы 2";
+- a hyperlink to a heading that Word bookmarked (_Toc), its text a word, not a number.
 Run: python make.py  (python-docx; the OMML XML is pasted as raw elements).
 """
 
@@ -16,6 +22,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from docx import Document
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from docx.shared import Cm
 from lxml import etree
 
@@ -27,12 +35,34 @@ def omml(name: str):
     return etree.fromstring((FIXTURES / "omml" / f"{name}.xml").read_bytes())
 
 
+def tracked(p, kind: str, text: str, rid: int) -> None:
+    el = OxmlElement(f"w:{kind}")
+    el.set(qn("w:id"), str(rid))
+    el.set(qn("w:author"), "Coauthor")
+    el.set(qn("w:date"), "2026-11-01T10:00:00Z")
+    r = OxmlElement("w:r")
+    t = OxmlElement("w:delText" if kind == "del" else "w:t")
+    t.set(qn("xml:space"), "preserve")
+    t.text = text
+    r.append(t)
+    el.append(r)
+    p._p.append(el)
+
+
 def main() -> None:
     doc = Document()
     doc.add_paragraph("Глава для стресс-теста", style="Title")
     doc.add_paragraph("А. Первый", style="Normal").style = doc.styles.add_style("Author", 1)
     doc.add_paragraph("Б. Второй", style="Author")
-    doc.add_heading("Раздел", level=1)
+    h = doc.add_heading("", level=1)
+    start = OxmlElement("w:bookmarkStart")
+    start.set(qn("w:id"), "50")
+    start.set(qn("w:name"), "_Toc100")
+    h._p.append(start)
+    h.add_run("Раздел")
+    end = OxmlElement("w:bookmarkEnd")
+    end.set(qn("w:id"), "50")
+    h._p.append(end)
     p = doc.add_paragraph("Текст ")
     p.add_run("подчеркнутый").underline = True
     p.add_run(" и ")
@@ -46,6 +76,29 @@ def main() -> None:
     p._p.append(omml("pmatrix"))
     p.add_run(", температура −5 градусов.")
     p = doc.add_paragraph("Ссылки [1], [1, 2], [1–2], как сказано [см. выше], и [2-3] в конце.")
+    p = doc.add_paragraph("Правка: было ")
+    tracked(p, "del", "старое", 901)
+    tracked(p, "ins", "новое", 902)
+    p.add_run(" слово.")
+    p = doc.add_paragraph("Операторы ")
+    p._p.append(omml("operators"))
+    p.add_run(".")
+    p = doc.add_paragraph()
+    p._p.append(omml("inline-x2"))
+    p.add_run("\t(2.1)")
+    p = doc.add_paragraph()
+    p.add_run("Лемма 2.").bold = True
+    p.add_run(" Утверждение леммы.")
+    p = doc.add_paragraph("Из (2.1) и леммы 2 следует все, см. ")
+    link = OxmlElement("w:hyperlink")
+    link.set(qn("w:anchor"), "_Toc100")
+    r = OxmlElement("w:r")
+    t = OxmlElement("w:t")
+    t.text = "раздел"
+    r.append(t)
+    link.append(r)
+    p._p.append(link)
+    p.add_run(".")
     t = doc.add_table(rows=2, cols=2)
     t.style = "Table Grid"
     t.cell(0, 0).text, t.cell(0, 1).text = "Ключ", "Значение"

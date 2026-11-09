@@ -1,4 +1,4 @@
-# Что ломало docx2tex в стресс-прогоне 2026-11-09 (test/stress/FINDINGS.md, пункты 1-6).
+# Что ломало docx2tex в стресс-прогоне 2026-11-09 (test/stress/FINDINGS.md, пункты 1-6, 11, 15-17).
 tex_contains:
   - "% \\author{А. Первый \\and Б. Второй}"                  # два абзаца Author: фильтр падал
   - "Ссылки \\cite{bib:1}, \\cite{bib:1,bib:2}, \\cite{bib:1,bib:2}, как сказано {[}см. выше{]}, и {[}2-3{]} в конце."
@@ -8,12 +8,25 @@ tex_contains:
   - "\\mathfrak{g} \\not\\subset A"                          # U+2284 -> \not\subset
   - "$-$5 градусов"                                          # U+2212 в тексте
   - "\\begin{tabular}[t]{@{}l@{}}Две\\\\строки\\end{tabular}"  # перевод строки в ячейке
+  - "Правка: было новое слово."                              # правки рецензирования приняты...
+  - "$\\operatorname{rank}G + a\\ \\operatorname{mod}\\ b + \\mathrm{d}x + \\sin x + \\mathrm{GF}(2)$"
+  - "\\begin{equation}\\tag{2.1}\n  x^{2}\n\\end{equation}"    # номер, набранный руками, тот же
+  - "\\begin{lemma}\nУтверждение леммы.\n\\end{lemma}"
+  - "\\section{Раздел}\\label{sec:razdel}"                     # ссылка на заголовок с закладкой Word
+  - "см. \\hyperref[sec:razdel]{раздел}."                      # текст ссылки остается
 tex_not_contains:
   - "\\pandocbounded"
   - "\u2284"
   - "\u2212"
+  - "\\mathrm{g}"
+  - "\ue005"
 compiles: true
-packages: [amsmath, amssymb, graphicx, soul]
+packages: [amsmath, amssymb, graphicx, soul, hyperref]
+report_has:                                                    # ...но об этом сказано в отчете
+  - extract.tracked-changes
+  - equation.typed-number
+  - theorem.typed-number
+  - cite.unknown-number
 report_absent:
   - internal-error
   - pandoc.failed

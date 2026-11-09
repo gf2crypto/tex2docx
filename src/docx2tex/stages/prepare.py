@@ -15,6 +15,9 @@ Status: implemented (M1). The source docx is never modified (CLAUDE.md invariant
   * a paragraph numbered by a list level whose bullet is blank (pandoc writes those for
     the second and further paragraphs of a list item, e.g. a theorem inside \\item) starts
     with U+E004: pandoc reads it as a list of its own; the filter puts it back into the item;
+  * upright Latin letters in a formula (m:sty p: \\operatorname{rank}, \\mathrm{d}) go between
+    U+E005 and U+E006: texmath knows only the usual function names and makes the rest
+    italic letters ("rankG"); the filter writes \\operatorname / \\mathrm;
   * a formula delimiter U+2225 (texmath writes it for \\lVert) becomes U+2016: texmath
     reads only the latter as a delimiter, the former as \\left. \\parallel.
 """
@@ -32,6 +35,8 @@ W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 MARK_START, MARK_END, MARK_TAB, MARK_CLOSE = "\ue000", "\ue001", "\ue002", "\ue003"
 MARK_CONT = "\ue004"
+MARK_UP_OPEN, MARK_UP_CLOSE = "\ue005", "\ue006"
+_UPRIGHT = re.compile(r"[A-Za-z](?:[A-Za-z\u2006\u2009]*[A-Za-z])?")
 # parts with paragraphs pandoc reads: the body and the notes (formulas, labels in footnotes)
 TEXT_PARTS = ("word/document.xml", "word/footnotes.xml", "word/endnotes.xml")
 
@@ -212,6 +217,19 @@ def _continuations(body: etree._Element, levels: set[tuple[str, str]]) -> None:
             _insert_at_start(p, r)
 
 
+def _upright_letters(body: etree._Element) -> None:
+    for r in body.iter(f"{{{M}}}r"):
+        rpr = r.find(f"{{{M}}}rPr")
+        if rpr is None or any(rpr.find(f"{{{M}}}{tag}") is not None for tag in ("nor", "scr")):
+            continue  # \text{...}: plain text; \mathfrak, \mathbb: texmath reads the script
+        sty = rpr.find(f"{{{M}}}sty")
+        if sty is None or sty.get(f"{{{M}}}val") != "p":
+            continue
+        for t in r.iter(f"{{{M}}}t"):
+            if t.text and _UPRIGHT.fullmatch(t.text):
+                t.text = MARK_UP_OPEN + t.text + MARK_UP_CLOSE
+
+
 def _math_delimiters(body: etree._Element) -> None:
     for tag in ("begChr", "sepChr", "endChr"):
         for el in body.iter(f"{{{M}}}{tag}"):
@@ -232,6 +250,7 @@ def prepare_xml(xml: bytes, continuations: set[tuple[str, str]] | None = None) -
         _complex_fields(p)
     _tabs(body)
     _math_delimiters(body)
+    _upright_letters(body)
     if continuations:
         _continuations(body, continuations)
     return etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True), n

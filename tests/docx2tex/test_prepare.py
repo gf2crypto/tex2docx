@@ -8,6 +8,8 @@ from docx2tex.stages.prepare import (
     MARK_END,
     MARK_START,
     MARK_TAB,
+    MARK_UP_CLOSE,
+    MARK_UP_OPEN,
     continuation_levels,
     prepare_xml,
 )
@@ -102,3 +104,32 @@ def test_parallel_delimiter_and_footnotes():
     text = out.decode("utf-8")
     assert n == 1 and MARK_START + "t2d_eq_fn" + MARK_END in text
     assert "\u2225" not in text and text.count("\u2016") == 2
+
+
+def test_upright_letters_in_formulas_are_marked():
+    """\\operatorname{rank} / \\mathrm{d}: upright runs (m:sty p) of Latin letters get markers;
+    \\text (m:nor), \\mathfrak/\\mathbb (m:scr), italic letters and signs do not."""
+    m = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
+
+    def run(text: str, rpr: str = "") -> str:
+        return f"<m:r>{'<m:rPr>' + rpr + '</m:rPr>' if rpr else ''}<m:t>{text}</m:t></m:r>"
+
+    p = '<m:sty m:val="p"/>'
+    xml = (f'<w:document {W} {m}><w:body><w:p><m:oMath>'
+           + run("rank", p) + run("G") + run("+", p) + run("d", p) + run("x")
+           + run("if", '<m:nor/>' + p) + run("g", '<m:scr m:val="fraktur"/>' + p)
+           + '</m:oMath></w:p></w:body></w:document>').encode()
+    text = prepare_xml(xml)[0].decode("utf-8")
+    assert MARK_UP_OPEN + "rank" + MARK_UP_CLOSE in text
+    assert MARK_UP_OPEN + "d" + MARK_UP_CLOSE in text
+    assert text.count(MARK_UP_OPEN) == 2  # not G, +, if, g
+
+
+def test_tracked_changes_are_counted():
+    from docx2tex.stages.extract import count_tracked_changes
+
+    xml = _doc('<w:p><w:del w:id="1"><w:r><w:delText>a</w:delText></w:r></w:del>'
+               '<w:ins w:id="2"><w:r><w:t>b</w:t></w:r></w:ins>'
+               '<w:ins w:id="3"><w:r><w:t>c</w:t></w:r></w:ins></w:p>')
+    assert count_tracked_changes(xml) == (2, 1)
+    assert count_tracked_changes(_doc('<w:p><w:r><w:t>x</w:t></w:r></w:p>')) == (0, 0)

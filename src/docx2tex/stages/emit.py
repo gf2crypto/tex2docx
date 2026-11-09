@@ -34,7 +34,7 @@ PACKAGE_HINTS: list[tuple[str, str]] = [
     (r"\\begin\{proof\}|\\begin\{(theorem|lemma|definition|remark|corollary|proposition|example)\}", "amsthm"),
     (r"\\begin\{algorithmic\}", "algpseudocode"),
     (r"\\begin\{algorithm\}", "algorithm"),
-    (r"\\url\{|\\href\{", "hyperref"),
+    (r"\\url\{|\\href\{|\\hyperref\[", "hyperref"),
     (r"\\begin\{longtable\}", "longtable"),
     (r"\\multirow", "multirow"),
 ]

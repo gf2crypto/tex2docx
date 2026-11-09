@@ -32,6 +32,7 @@ RULES: list[tuple[str, str]] = [
     (r"\u2003", r"\\quad "),
     (r"[\u2000-\u2005\u2008]", " "),
     (r"[\u200b\u200c\u200d\ufeff]", ""),         # zero-width
+    (r"\\hspace\{0pt\}", ""),                    # pandoc's zero-width space
     # our own environments: no blank line right after \\begin{...} and before \\end{...}
     (r"(\\begin\{[a-z*]+\}(?:\[[^\]\n]*\])?(?:\\label\{[^}]*\})*)\n\n", r"\1\n"),
     (r"\n\n([ \t]*\\end\{[a-z*]+\})", r"\n\1"),
