@@ -42,7 +42,10 @@ class Item:
 
 
 class Report:
-    def __init__(self) -> None:
+    def __init__(self, tool: str = "tex2docx") -> None:
+        # tex2docx writes <base>.report.*, other tools <base>.<tool>.report.*: run in one
+        # folder, docx2tex (a.docx -> a.tex) must not overwrite the report of tex2docx.
+        self.tool = tool
         self.items: list[Item] = []
         # Set by the flatten stage: origin of each line of the flattened source.
         self.line_map: list[tuple[str, int]] = []
@@ -76,10 +79,15 @@ class Report:
     def counts(self) -> Counter[str]:
         return Counter(i.level for i in self.items)
 
+    def paths(self, base: Path) -> tuple[Path, Path]:
+        """(<base>.report.json, <base>.report.md), with '.<tool>' before '.report' for
+        tools other than tex2docx."""
+        stem = ".report" if self.tool == "tex2docx" else f".{self.tool}.report"
+        return base.with_suffix(stem + ".json"), base.with_suffix(stem + ".md")
+
     def write(self, base: Path) -> tuple[Path, Path]:
-        """Write <base>.report.json and <base>.report.md, return both paths."""
-        jpath = base.with_suffix(".report.json")
-        mpath = base.with_suffix(".report.md")
+        """Write the report files (see paths), return both paths."""
+        jpath, mpath = self.paths(base)
         rows = []
         for i in self.items:
             d = asdict(i)
@@ -93,7 +101,7 @@ class Report:
     def to_markdown(self) -> str:
         c = self.counts()
         out = [
-            "# Отчет tex2docx",
+            f"# Отчет {self.tool}",
             "",
             f"Ошибок: {c['error']}, предупреждений: {c['warning']}, заметок: {c['info']}.",
             "",

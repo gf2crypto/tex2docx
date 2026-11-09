@@ -53,7 +53,12 @@ def test_roundtrip(case: str, tmp_path: Path):
     a_tex = work / "a.tex"
     docx_to_tex(a_docx, a_tex)
     # theorem names come back without their numbers ("Лемма", not "Лемма 2.3")
-    report = json.loads(a_tex.with_suffix(".report.json").read_text(encoding="utf-8"))
+    # both tools ran in one folder on one name: each keeps its own report (stress run, item 23)
+    assert (work / "a.report.md").read_text(encoding="utf-8").startswith("# Отчет tex2docx")
+    report_path = work / "a.docx2tex.report.json"
+    d2t_md = (work / "a.docx2tex.report.md").read_text(encoding="utf-8")
+    assert d2t_md.startswith("# Отчет docx2tex")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
     titles = [i["detail"] for i in report if i["code"] == "emit.newtheorem"]
     assert not [t for t in titles if re.search(r"\d", t)], f"{case}: numbered names {titles}"
 
@@ -99,7 +104,8 @@ def test_sidecar_inside_the_docx_is_enough(tmp_path: Path):
     tex = (work / "chapter.tex").read_text(encoding="utf-8")
     assert "\\begin{equation}\\label{eq:square}" in tex
     assert "\\eqref{eq:square}" in tex
-    assert "label.unmapped" not in (work / "chapter.report.md").read_text(encoding="utf-8")
+    report = (work / "chapter.docx2tex.report.md").read_text(encoding="utf-8")
+    assert "label.unmapped" not in report
 
 
 @needs_all
@@ -118,6 +124,6 @@ def test_into_main_document_with_bib(tmp_path: Path):
     tex = (work / "chapter.tex").read_text(encoding="utf-8")
     assert "\\cite{knuth2000,lamport1978}" in tex
     assert "thebibliography" not in tex and "bib:1" not in tex
-    report = (work / "chapter.report.md").read_text(encoding="utf-8")
+    report = (work / "chapter.docx2tex.report.md").read_text(encoding="utf-8")
     assert "bib.matched" in report and "into.input" in report
     assert "into.missing" not in report

@@ -1,6 +1,6 @@
 ---
-description: Разобрать отчет tex2docx с реальной статьи и превратить его в задачи
-argument-hint: "[путь к *.report.md или *.report.json]"
+description: Разобрать отчет tex2docx или docx2tex с реальной статьи и превратить его в задачи
+argument-hint: "[путь к *.report.md, *.docx2tex.report.md или *.report.json]"
 ---
 
 Иван прислал отчет конвертации реальной статьи: $ARGUMENTS

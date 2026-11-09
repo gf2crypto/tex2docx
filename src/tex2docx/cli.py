@@ -45,6 +45,6 @@ def main(argv: list[str] | None = None) -> int:
     c = report.counts()
     status = "FAILED" if not output.exists() else "ok"
     print(f"{status}: {output}")
-    print(f"report: {output.with_suffix('.report.md')} "
+    print(f"report: {report.paths(output)[1]} "
           f"(errors {c['error']}, warnings {c['warning']}, notes {c['info']})")
     return 1 if not output.exists() else 0

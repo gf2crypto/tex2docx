@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
     report = convert(a.source, output, config, standalone=a.standalone, workdir=a.workdir, into=a.into)
     c = report.counts()
     print(f"{'ok' if output.exists() else 'FAILED'}: {output}")
-    print(f"report: {output.with_suffix('.report.md')} "
+    print(f"report: {report.paths(output)[1]} "
           f"(errors {c['error']}, warnings {c['warning']}, notes {c['info']})")
     if a.into and output.exists():
         print(f"add to {a.into.name}: \\input{{{output.stem}}}")

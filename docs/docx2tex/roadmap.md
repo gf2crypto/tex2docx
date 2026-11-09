@@ -24,7 +24,7 @@
 
 - [x] Пакет `src/docx2tex/`, CLI `docx2tex chapter.docx [-o chapter.tex] [--standalone]`,
       тот же конвейер этапов над `Context`, тот же отчет без текста документа
-      (`chapter.report.md`), общие с tex2docx `report.py`, `tools.py` и правила `CLAUDE.md`.
+      (`chapter.docx2tex.report.md`), общие с tex2docx `report.py`, `tools.py` и правила `CLAUDE.md`.
 - [x] Этап `extract`: закладки и поля из `word/document.xml` (pandoc их теряет), документ-спутник
       `<имя>.t2d.xml` (ADR 0008), язык (спутник → конфиг → по тексту).
 - [x] Этап `pandoc`: `pandoc -f docx+styles -t latex --extract-media` с фильтром `structures.lua`
@@ -160,6 +160,8 @@
       (`style.unknown Equation`).
 - [x] tex2docx: имя доказательства по языку babel (Доказательство / Доведення / Proof) или из
       `\renewcommand{\proofname}` в преамбуле; `config.proof_name` по умолчанию пуст.
+- [x] Отчет docx2tex называется `<имя>.docx2tex.report.md`: отчет tex2docx с тем же именем
+      (`a.tex` → `a.docx` → `a.tex` в одной папке) больше не затирается.
 - [x] Отчеты: из подробностей отчета вырезаются папки абсолютных путей (`latex.log` содержал
       путь рабочей папки с именем пользователя), остается имя файла.
 

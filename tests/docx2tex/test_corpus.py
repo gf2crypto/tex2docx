@@ -39,7 +39,7 @@ def converted(request, tmp_path_factory):
     cfg = CORPUS / case / "config.yaml"
     convert(build_input(case), out, Config.load(cfg) if cfg.is_file() else None, standalone=True)
     expect = yaml.safe_load((CORPUS / case / "expect.yaml").read_text(encoding="utf-8")) or {}
-    report = json.loads(out.with_suffix(".report.json").read_text(encoding="utf-8"))
+    report = json.loads(out.with_suffix(".docx2tex.report.json").read_text(encoding="utf-8"))
     tex = out.read_text(encoding="utf-8") if out.exists() else ""
     return case, expect, tex, report, out
 

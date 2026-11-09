@@ -95,7 +95,7 @@ Centered, Right Aligned, Left Aligned не трогайте; у Equation два 
 Глава соавтора из Word → фрагмент LaTeX для `\input`:
 
 ```sh
-docx2tex chapter.docx                  # → chapter.tex, images/, chapter.report.md, chapter.t2d.xml
+docx2tex chapter.docx                  # → chapter.tex, images/, chapter.docx2tex.report.md, chapter.t2d.xml
 docx2tex chapter.docx --into main.tex  # фрагмент рядом с основным документом, под его преамбулу
 docx2tex chapter.docx --standalone     # + chapter.standalone.tex с преамбулой, собирается как проверка
 ```
