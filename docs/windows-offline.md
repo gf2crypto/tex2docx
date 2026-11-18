@@ -47,6 +47,9 @@ Set-ExecutionPolicy -Scope Process Bypass    # PowerShell по умолчани�
 .\scripts\download-offline-deps.ps1
 ```
 
+Параметр `-PythonVersion` задает версию Python на целевом компьютере, например `3.12`.
+По умолчанию скачиваются колеса для Python 3.12 и Windows x64.
+
 Скрипт кладет в папку `offline\wheels` колеса `python-docx`, `lxml`, `PyYAML`, `Pillow`,
 `pytest`, `setuptools`, `wheel` для Windows x64, а в `offline\` — архив исходников
 tex2docx (`tex2docx-src.zip`). Если PowerShell недоступен, те же команды вручную:

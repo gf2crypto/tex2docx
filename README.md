@@ -22,33 +22,112 @@
 
 ## Установка
 
-Нужны: pandoc ≥ 3.1, TeX Live (полный; на macOS — MacTeX) с latexmk, poppler (`pdftoppm`),
-Python ≥ 3.10.
+Нужны Git, Python 3.10 или новее, Pandoc 3.1 или новее, полный TeX Live с `latexmk`
+и Poppler с `pdftoppm`. Команда `git clone` скачивает исходники, а `pip install`
+устанавливает обе команды конвертации. Если проект уже скачан, начните с папки, где лежит
+`pyproject.toml`, и пропустите `git clone` и следующий за ним `cd`.
 
-macOS:
+### macOS
+
+Если инструменты еще не установлены, выполните в Терминале с Homebrew:
 
 ```sh
-brew install pandoc poppler          # TeX Live / MacTeX — если еще нет
-git clone https://github.com/gf2crypto/tex2docx.git && cd tex2docx
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e '.[dev,images]'
-tex2docx --check                     # все ли инструменты и пакеты TeX на месте
-pytest -q                            # сквозные тесты на корпусе
+brew install python pandoc poppler
+brew install --cask mactex
 ```
 
-Windows без интернета: `docs/windows-offline.md` — что скачать заранее (TeX Live ISO, pandoc,
-poppler, Python, колеса) и как поставить; `docs/windows-portable.md` — переносимая папка
-без установщиков и прав администратора, запуск через `tex2docx.bat`.
-
-## Использование
+После установки MacTeX откройте новое окно Терминала. Скачайте и установите проект:
 
 ```sh
-tex2docx paper.tex                       # → paper.docx и paper.report.md рядом с paper.tex
-tex2docx paper.tex --profile standard    # стандартный шаблон оформления (см. ниже)
-tex2docx paper.tex --engine xelatex      # если статья собирается xelatex (fontspec)
-tex2docx paper.tex -o out/paper.docx -c my.yaml   # свой конфиг (образец: examples/config.yaml)
-tex2docx paper.tex --workdir /tmp/wd     # сохранить промежуточные файлы в новом подкаталоге /tmp/wd
-tex2docx --check                         # проверка окружения
+git clone https://github.com/gf2crypto/tex2docx.git
+cd tex2docx
+python3 -m venv .venv
+./.venv/bin/python -m pip install ".[images]"
+```
+
+### Linux
+
+Для Debian 13:
+
+```sh
+sudo apt install git python3 python3-venv pandoc texlive-full latexmk poppler-utils
+```
+
+В других дистрибутивах установите те же инструменты через пакетный менеджер.
+Если `pandoc --version` показывает версию ниже 3.1, установите более свежую версию
+по [инструкции Pandoc для Linux](https://pandoc.org/installing.html#linux).
+
+```sh
+git clone https://github.com/gf2crypto/tex2docx.git
+cd tex2docx
+python3 -m venv .venv
+./.venv/bin/python -m pip install ".[images]"
+```
+
+### Windows
+
+Установите Python, Pandoc, полный TeX Live и Poppler. Убедитесь, что `pandoc.exe`,
+`latexmk` и `pdftoppm.exe` доступны через `PATH`, и откройте новое окно PowerShell.
+Затем скачайте и установите проект:
+
+```powershell
+git clone https://github.com/gf2crypto/tex2docx.git
+cd tex2docx
+py -m pip install --user ".[images]"
+```
+
+Если команда `py` недоступна, используйте `python`. Для компьютера без интернета
+есть [инструкция по офлайн-установке](docs/windows-offline.md) и
+[сборке переносимой папки с файлами .bat](docs/windows-portable.md).
+
+## Первый запуск
+
+В примерах `paper.tex` — главный файл статьи, а `chapter.docx` — документ Word для
+обратного преобразования. Укажите свои пути и заключайте их в кавычки, если в них есть пробелы.
+
+На **macOS и Linux** из папки проекта:
+
+```sh
+./.venv/bin/tex2docx --check
+./.venv/bin/tex2docx paper.tex
+./.venv/bin/docx2tex chapter.docx
+```
+
+На **Windows** в PowerShell:
+
+```powershell
+py -m tex2docx --check
+py -m tex2docx paper.tex
+py -m docx2tex chapter.docx
+```
+
+`tex2docx` создаст `paper.docx` рядом с исходником. `docx2tex` создаст `chapter.tex`
+рядом с `chapter.docx`. Обе команды также пишут отчеты в Markdown и JSON.
+Для примеров ниже на macOS и Linux можно активировать окружение командой
+`source .venv/bin/activate`, а на Windows использовать `py -m` перед именем команды.
+
+## Параметры команд
+
+| Параметр | Где доступен | Что делает |
+|---|---|---|
+| `SOURCE` | обе команды | Главный `.tex` для `tex2docx` или исходный `.docx` для `docx2tex`. При вызове `--check`, `--help` или `--version` файл не нужен. |
+| `-o FILE`, `--output FILE` | обе | Путь результата. По умолчанию берется имя исходника с новым расширением. При `--into` фрагмент по умолчанию сохраняется рядом с главным `.tex`. |
+| `-c FILE`, `--config FILE` | обе | Файл настроек YAML. Ключи описаны в разделе [Настройка](#настройка). |
+| `--engine {pdflatex,xelatex,lualatex}` | обе | Выбирает движок LaTeX и переопределяет `engine` из YAML. По умолчанию `pdflatex`. В `docx2tex` применяется при проверочной сборке с `--standalone`. |
+| `--workdir DIR` | обе | Сохраняет логи и промежуточные файлы в новом подкаталоге `DIR` для каждого запуска. |
+| `-h`, `--help` | обе | Показывает синтаксис и список параметров. |
+| `--version` | обе | Показывает версию команды. |
+| `--check` | `tex2docx` | Проверяет версии и наличие внешних инструментов, Python-пакетов и пакетов TeX. |
+| `--profile {default,standard}` | `tex2docx` | Выбирает встроенный шаблон Word. `standard` включает Times New Roman 14 и интервал 1,5. Свой `reference_docx` из YAML имеет приоритет. |
+| `--keep-workdir` | `tex2docx` | Оставляет автоматически созданную временную папку. При `--workdir` папка запуска сохраняется сразу. |
+| `--into MAIN.tex` | `docx2tex` | Учитывает теоремы, макросы, язык и библиографию основного документа. Если путь фрагмента совпадает с основным файлом, задайте свободный путь через `-o`. |
+| `--standalone` | `docx2tex` | Дополнительно создает `<имя>.standalone.tex` с преамбулой и запускает проверочную сборку. Результат сборки указан в отчете. |
+
+Переносимые Windows-команды `tex2docx.bat` и `docx2tex.bat` принимают те же параметры.
+
+```sh
+tex2docx paper.tex --engine xelatex --profile standard -c my.yaml -o out/paper.docx
+docx2tex chapter.docx --into main.tex -o imported.tex --standalone
 ```
 
 Условие одно: статья должна собираться своим LaTeX (`latexmk` из ее каталога). Исходники
@@ -86,10 +165,43 @@ LaTeX используйте лог в подкаталоге запуска, с
 
 ## Настройка
 
-Все ключи — в `examples/config.yaml` с комментариями: движок TeX, профиль или свой шаблон
-стилей, стиль CSL для библиографии, имя доказательства и имена подписей («Рис.», «Таблица»),
-стили теорем, подмена макросов, какие окружения рендерить картинками, живые номера,
-что делать с непереводимыми формулами.
+Передайте YAML через `-c FILE`. Все ключи необязательны.
+
+### YAML для tex2docx
+
+[Пример файла конфигурации](examples/config.yaml).
+
+| Ключ | Что задает |
+|---|---|
+| `engine` | Движок TeX. По умолчанию `pdflatex`. |
+| `profile` | Встроенный шаблон `default` или `standard`. |
+| `reference_docx` | Путь к своему шаблону Word. Имеет приоритет над `profile`. |
+| `proof_name` | Заголовок доказательства. По умолчанию берется из `\renewcommand{\proofname}{...}` или определяется по языку. |
+| `theorem_styles` | Соответствие стиля LaTeX стилю абзаца Word. По умолчанию `plain → Theorem`, `definition → Definition`, `remark → Remark`. |
+| `figure_name`, `table_name`, `caption_sep` | Префиксы и разделитель подписей рисунков и таблиц. По умолчанию зависят от языка. |
+| `macros` | Соответствие макросов LaTeX их заменам перед обработкой Pandoc. |
+| `figure_envs` | Список окружений для рендеринга в картинки. По умолчанию `tikzpicture`, `pchstack`, `pcvstack`, `procedure`, `pseudocode`. |
+| `algorithms` | `text` для редактируемого псевдокода, `image` для картинки. По умолчанию `text`. |
+| `figure_dpi` | Разрешение растрового вывода. По умолчанию 300 DPI. |
+| `live_numbers` | Включает поля Word SEQ и REF для поддерживаемых номеров и ссылок. По умолчанию `false`. |
+| `csl` | Путь к стилю CSL для библиографии citeproc. По умолчанию ГОСТ Р 7.0.5-2008. |
+| `math_fallback` | Что делать с формулой, которую Pandoc не смог преобразовать. `image` для картинки, `text` для исходного TeX. По умолчанию `image`. |
+| `latex_timeout` | Лимит одного запуска LaTeX в секундах. По умолчанию 600. |
+
+Относительные пути для `reference_docx` и `csl` считаются от папки YAML.
+
+### YAML для docx2tex
+
+Запишите параметры в корне отдельного YAML или в секции `docx2tex:` файла, который
+передается обратному конвертеру. Значения из секции имеют приоритет.
+
+| Ключ | Что задает |
+|---|---|
+| `engine` | Движок проверочной сборки с `--standalone`. По умолчанию `pdflatex`. |
+| `theorem_envs` | Дополняет встроенное соответствие между названием теоремы в Word и окружением в LaTeX. |
+| `images_dir` | Папка извлеченных изображений относительно выходного `.tex`. По умолчанию `images`. |
+| `language` | Язык документа, например `russian`. По умолчанию определяется при преобразовании. |
+| `macros` | Соответствие имен макросов их определениям. Например, при `'\matr': '\mathbf'` фрагмент `\mathbf{X}` записывается как `\matr{X}`. |
 
 ## Обратно: docx2tex
 
@@ -128,3 +240,6 @@ docx2tex chapter.docx --standalone     # + chapter.standalone.tex с преам�
 `docs/decisions/`; поведение pandoc, на которое опираемся, — `docs/pandoc-behavior.md`;
 что не поддерживаем и почему — `docs/limitations.md`; планы — `ROADMAP.md`.
 Тестовый корпус — только синтетика (`tests/corpus/`), реальных статей в репозитории нет.
+
+Для запуска тестов в окружении проекта установите дополнительные зависимости
+командой `python -m pip install -e ".[dev,images]"`, затем выполните `python -m pytest -q`.

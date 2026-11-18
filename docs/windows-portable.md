@@ -38,6 +38,13 @@ tex2docx-portable\
        -PopplerZip C:\Downloads\Release-xx.yy.z-0.zip
    ```
 
+   | Параметр `make-portable.ps1` | Значение |
+   |---|---|
+   | `-PythonVersion` | Полная версия Python embeddable для Windows x64, по умолчанию `3.12.7`. |
+   | `-PandocZip` | Обязательный путь к ZIP-архиву Pandoc для Windows x64. |
+   | `-PopplerZip` | Обязательный путь к ZIP-архиву Poppler для Windows x64. |
+   | `-Out` | Папка сборки. По умолчанию `tex2docx-portable` в текущей папке. |
+
    Скрипт сам скачивает Python embeddable с python.org (укажите существующую версию 3.10+;
    список: https://www.python.org/downloads/windows/), колеса `python-docx`, `lxml`,
    `PyYAML`, `Pillow`, распаковывает их в `python\Lib\site-packages` (колесо — это zip,
