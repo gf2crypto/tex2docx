@@ -108,7 +108,13 @@ def document_language(text: str) -> tuple[str, bool]:
 _CMD = re.compile(r"\\[A-Za-z@]+\*?\s*")
 
 
+_INLINE_MATH = re.compile(r"(?<!\\)(\$[^$]+\$)")
+
+
 def strip_tex(s: str) -> str:
-    """Turn a LaTeX-printed number like '\\textup {(i)}' or '\\relax 1.2' into plain text."""
-    s = _CMD.sub("", s)
-    return s.replace("{", "").replace("}", "").replace("~", " ").strip()
+    """Turn a LaTeX-printed number like '\\textup {(i)}' or '\\relax 1.2' into plain text.
+    Math stays as it is ('\\tag{$\\ast$}' -> '$\\ast $'): the filters convert it to OMML."""
+    parts = _INLINE_MATH.split(s)
+    for i in range(0, len(parts), 2):
+        parts[i] = _CMD.sub("", parts[i]).replace("{", "").replace("}", "").replace("~", " ")
+    return "".join(parts).strip()

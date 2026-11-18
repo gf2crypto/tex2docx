@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import shutil
-import tempfile
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -11,10 +10,15 @@ from pathlib import Path
 
 from tex2docx.report import Report
 from tex2docx.sidecar import Sidecar
+from tex2docx.tools import create_workdir
 
 from .config import Config
 from .context import Context
 from .stages import StageError, bibmatch, check, emit, extract, maindoc, normalize, pandoc_run
+
+
+class OutputConflictError(ValueError):
+    """An output path would overwrite one of the input documents."""
 
 
 @dataclass(frozen=True)
@@ -39,11 +43,24 @@ def convert(source: Path, output: Path, config: Config | None = None, *, standal
             workdir: Path | None = None, keep_workdir: bool = False, into: Path | None = None) -> Report:
     config = config or Config()
     source, output = source.resolve(), output.resolve()
+    main = into.resolve() if into else None
+    outputs = [output, Sidecar.path_for(output), *Report("docx2tex").paths(output)]
+    if standalone:
+        outputs.append(output.with_suffix(".standalone.tex"))
+    for target in outputs:
+        for original in (source, main):
+            if original is None:
+                continue
+            if target.resolve() == original or (
+                target.exists() and original.exists() and target.samefile(original)
+            ):
+                raise OutputConflictError(
+                    f"Output {target} would overwrite {original}. Choose a different -o path."
+                )
     own_tmp = workdir is None
-    wd = Path(tempfile.mkdtemp(prefix="d2t-")) if own_tmp else workdir.resolve()
-    wd.mkdir(parents=True, exist_ok=True)
+    wd = create_workdir(workdir, "d2t-")
     ctx = Context(source=source, output=output, workdir=wd, config=config, standalone=standalone,
-                  main=into.resolve() if into else None)
+                  main=main)
     try:
         for st in STAGES:
             try:
@@ -61,7 +78,7 @@ def convert(source: Path, output: Path, config: Config | None = None, *, standal
     finally:
         output.parent.mkdir(parents=True, exist_ok=True)
         ctx.report.write(output)
-        if output.exists():  # the sidecar travels with the fragment
+        if ctx.report.output_written:  # the sidecar travels with this run's fragment
             sc = ctx.sidecar
             sc.language = sc.language or ctx.language
             sc.save(Sidecar.path_for(output))

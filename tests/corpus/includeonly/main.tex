@@ -1,0 +1,9 @@
+\documentclass{article}
+\input{selection}
+\newcommand{\Chapters}{\include{sections/skip}\include{sections/keep.tex}}
+\begin{document}
+\Chapters
+\include{sections/not-on-disk}
+\input{sections/input}
+See section~\ref{sec:selected}.
+\end{document}

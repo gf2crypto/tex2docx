@@ -13,7 +13,7 @@ main.tex ─► flatten ─► autolabel ─► latex ─────► theorem
 
 | Этап | Файл | Что делает | Статус |
 |---|---|---|---|
-| flatten | `stages/flatten.py` | склейка `\input`/`\include`, пустые строки вместо строк-комментариев | готов |
+| flatten | `stages/flatten.py` | склейка `\input`/`\include`, учет `\includeonly` из преамбулы | готов |
 | autolabel | `stages/autolabel.py` | `\label{t2d:auto:N}` для нумеруемых объектов без метки | готов |
 | latex | `stages/latex_compile.py` | latexmk → `.aux` → `ctx.labels` | готов |
 | theorems | `stages/theorems.py` | `\newtheorem`, `\theoremstyle`, `\declaretheorem` → `ctx.theorems` | готов (amsthm, thmtools, ntheorem) |
@@ -76,7 +76,9 @@ texmath не справился) и пишет список в `mathfail.json`. 
 - Lua: `t2d.report('warning', 'code', 'detail')` → stderr → `pandoc_run.collect_pandoc_messages`.
 - Также в отчет идут: команды, которые pandoc пропустил (кроме безвредных из `HARMLESS_SKIPS`),
   и формулы, которые texmath не перевел (только имя непонятой команды).
-- Результат: `<out>.report.md` для человека, `<out>.report.json` для разбора.
+- Результат: `<out>.report.md` для человека, `<out>.report.json` для разбора; у docx2tex —
+  `<out>.docx2tex.report.md/.json`, чтобы при запуске обоих в одной папке отчеты не затирали
+  друг друга.
 - Уровни: `error` — результат заведомо неполон; `warning` — вероятно неточно; `info` — к сведению
   (в том числе `stage.not-implemented`, пока этап не готов).
 

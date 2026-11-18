@@ -21,7 +21,7 @@ class Context:
     prepared: Path | None = None  # working copy of the docx with markers (stages/extract.py)
     main: Path | None = None  # --into: the main document the fragment is written for
     main_doc: object = None  # maindoc.MainDoc, read by stages/maindoc.py
-    report: Report = field(default_factory=Report)
+    report: Report = field(default_factory=lambda: Report("docx2tex"))
     sidecar: Sidecar = field(default_factory=Sidecar)
     language: str = "english"
     # facts from the docx XML that pandoc drops

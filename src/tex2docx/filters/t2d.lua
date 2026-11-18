@@ -30,13 +30,21 @@ end
 -- filter) turns them into text or, with config live_numbers, into Word fields (ADR 0006).
 -- num: as LaTeX printed it; counter: SEQ name; label: for the bookmark; within:
 -- "section" when numbered per section; level: heading level for headings.
+-- A number as inlines: plain text as is; TeX ("$\ast$" from \tag, "\textbf{T}") read by
+-- pandoc, so that math in it becomes a Word formula, not text with dollars.
+function M.number_inlines(num)
+  if not num:find('[\\$]') then return { pandoc.Str(num) } end
+  local blocks = pandoc.read(num, 'latex').blocks
+  return pandoc.utils.blocks_to_inlines(blocks)
+end
+
 function M.number(num, counter, label, within, level)
-  return { pandoc.Span({ pandoc.Str(num) }, pandoc.Attr('', { 't2d-num' }, {
+  return { pandoc.Span(M.number_inlines(num), pandoc.Attr('', { 't2d-num' }, {
     counter = counter or '', label = label or '', within = within or '', level = level and tostring(level) or '' })) }
 end
 
 function M.ref(num, label)
-  return { pandoc.Span({ pandoc.Str(num) }, pandoc.Attr('', { 't2d-ref' }, { label = label or '' })) }
+  return { pandoc.Span(M.number_inlines(num), pandoc.Attr('', { 't2d-ref' }, { label = label or '' })) }
 end
 
 return M

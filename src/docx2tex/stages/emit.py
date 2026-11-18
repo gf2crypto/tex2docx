@@ -11,9 +11,11 @@ Pillow; EMF/WMF -> PDF with LibreOffice when present, else images.unsupported).
 
 from __future__ import annotations
 
+import hashlib
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 from ..context import Context
@@ -133,22 +135,36 @@ def run(ctx: Context) -> None:
             rel = ctx.output.with_suffix("").as_posix()
         ctx.report.info(STAGE, "into.input", f"\\input{{{rel}}}")
     ctx.output.parent.mkdir(parents=True, exist_ok=True)
-    ctx.output.write_text(ctx.tex, encoding="utf-8")
     media = ctx.workdir / "media"
+    image_paths: dict[str, str] = {}
     if media.is_dir():
         dest = ctx.output.parent / ctx.config.images_dir
-        dest.mkdir(exist_ok=True)
-        n = 0
-        for f in sorted(media.rglob("*")):  # flat: normalize wrote <images_dir>/<name>
-            if f.is_file():
-                out_name = convert_image(f, dest, ctx)
-                if out_name != f.name:
-                    ctx.tex = ctx.tex.replace(f"{ctx.config.images_dir}/{f.name}", f"{ctx.config.images_dir}/{out_name}")
-                n += 1
-        if n:
-            ctx.report.info(STAGE, "emit.images", str(n))
-        ctx.output.write_text(ctx.tex, encoding="utf-8")
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in sorted(media.rglob("*")):
+            if not f.is_file():
+                continue
+            # Convert each original separately: x.bmp and x.png can both become x.png.
+            with tempfile.TemporaryDirectory(dir=dest, prefix=".d2t-") as tmp:
+                scratch = Path(tmp)
+                converted = scratch / convert_image(f, scratch, ctx)
+                digest = hashlib.sha256(converted.read_bytes()).hexdigest()
+                name = digest + converted.suffix.lower()
+                # The name depends on the final bytes. A rerun or another fragment
+                # can share this path without changing the first fragment's image.
+                converted.replace(dest / name)
+            image_paths[f.name] = name
+    if image_paths:
+        pattern = re.compile(r"(?<=\{)" + re.escape(ctx.config.images_dir) + r"/([^{}]+)(?=\})")
+
+        def replace_image(match: re.Match[str]) -> str:
+            name = image_paths.get(match[1])
+            return f"{ctx.config.images_dir}/{name}" if name else match[0]
+
+        ctx.tex = pattern.sub(replace_image, ctx.tex)
+        ctx.report.info(STAGE, "emit.images", str(len(image_paths)))
     if ctx.standalone:
         sa = ctx.output.with_suffix(".standalone.tex")
         sa.write_text(standalone(ctx), encoding="utf-8")
         ctx.report.info(STAGE, "emit.standalone", sa.name)
+    ctx.output.write_text(ctx.tex, encoding="utf-8")
+    ctx.report.output_written = True

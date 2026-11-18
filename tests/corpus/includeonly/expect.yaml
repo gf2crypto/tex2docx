@@ -1,0 +1,13 @@
+contains:
+  - "1 Selected chapter"
+  - "Selected chapter body."
+  - "Text from an ordinary input."
+  - "See section 1."
+not_contains:
+  - "Excluded chapter"
+report_absent:
+  - flatten.missing-input
+  - latex.compile-errors
+  - crossref.unresolved
+  - pandoc.skipped
+  - internal-error

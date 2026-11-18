@@ -12,7 +12,7 @@ import re
 from importlib import resources
 from pathlib import Path
 
-from tex2docx.tools import ToolError, require
+from tex2docx.tools import ToolError, pandoc_failure, require
 from tex2docx.tools import run as run_tool
 
 from ..config import DEFAULT_THEOREM_ENVS
@@ -37,22 +37,6 @@ def bookmark_labels(ctx: Context) -> dict[str, str]:
     for label in set(ctx.sidecar.labels.values()):
         out["_" + hashlib.sha1(label.encode("utf-8")).hexdigest()[1:40]] = label
     return out
-
-
-def _failure(stderr: str) -> str:
-    """The message of a failed pandoc run: for a Lua error the lines between
-    'Error running filter' and the stack traceback, else the last line."""
-    lines = [ln.strip() for ln in stderr.strip().splitlines() if ln.strip() and not ln.startswith("[d2t]")]
-    for i, ln in enumerate(lines):
-        if ln.startswith("Error running filter"):
-            body = []
-            for x in lines[i + 1:]:
-                if x.startswith("stack traceback"):
-                    break
-                body.append(x)
-            where = next((x.strip() for x in lines[i + 1:] if ".lua:" in x), "")
-            return (" | ".join(body) + " @ " + where.rsplit("/", 1)[-1].rsplit("\\", 1)[-1])[:300]
-    return (lines[-1] if lines else "no output")[:200]
 
 
 def run(ctx: Context) -> None:
@@ -87,5 +71,5 @@ def run(ctx: Context) -> None:
         elif _MATHFAIL.search(line):
             ctx.report.warn(STAGE, "math.not-converted", "")
     if proc.returncode != 0 or not out.exists():
-        raise StageError("pandoc.failed", _failure(proc.stderr))
+        raise StageError("pandoc.failed", pandoc_failure(proc))
     ctx.tex = out.read_text(encoding="utf-8")

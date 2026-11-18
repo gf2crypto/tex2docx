@@ -1,0 +1,18 @@
+# English article: math in \tag (item 25) and the proof name by language (item 27),
+# stress run 2026-11-09.
+contains:
+  - "\t\t()"                     # (\ast): the star is a formula, the probe skips math
+  - "\t\tA"                      # \tag*{A$'$}: no parentheses, the prime is a formula
+  - "\t\t(T)"
+  - "By () and (T) the claim follows."
+  - "Theorem 1."
+  - "Proof. Trivial."
+not_contains:
+  - "$"
+  - "\\ast"
+  - "Доказательство"
+math_min: 8
+styles: [Theorem, Equation, Proof]
+report_absent:
+  - equations.unresolved
+  - crossref.unresolved

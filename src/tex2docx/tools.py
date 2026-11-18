@@ -6,11 +6,20 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
 class ToolError(RuntimeError):
     pass
+
+
+def create_workdir(parent: Path | None, prefix: str) -> Path:
+    """Give each conversion its own intermediates, optionally under a retained directory."""
+    if parent is not None:
+        parent = parent.resolve()
+        parent.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=prefix, dir=parent)).resolve()
 
 
 def require(name: str) -> str:
@@ -97,15 +106,50 @@ def unwrap_log(text: str) -> list[str]:
     return out
 
 
-def log_errors(log_file: Path, limit: int = 20) -> list[str]:
-    """Error headers ('! ...' or 'file:line: ...') from a TeX log, without context lines."""
+_LOG_LOCATION = re.compile(r"^(?P<file>.+?):(?P<line>[0-9]+):\s*")
+_PACKAGE_ERROR = re.compile(r"Package ([A-Za-z0-9_.-]+) Error:")
+_ERROR_TYPES = (
+    "Undefined control sequence",
+    "LaTeX Error",
+    "Emergency stop",
+    "Missing character",
+    "Runaway argument",
+)
+
+
+def log_errors(log_file: Path, limit: int = 20) -> list[tuple[str, int | None]]:
+    """Extract fixed error categories and generated-source line numbers for reports."""
     if not log_file.exists():
         return []
-    out = []
+    errors = []
     for line in unwrap_log(log_file.read_text(encoding="utf-8", errors="replace")):
-        if (line.startswith("!") or ": LaTeX Error:" in line or ": Undefined control" in line
-                or re.search(r": Package [\w.]+ Error:", line)):
-            out.append(line.strip())
-            if len(out) >= limit:
-                break
-    return out
+        location = _LOG_LOCATION.match(line)
+        message = line[location.end():] if location else line.removeprefix("!").lstrip()
+        if not location and not line.startswith("!"):
+            continue
+        if package := _PACKAGE_ERROR.match(message):
+            category = f"Package {package[1]} Error"
+        else:
+            category = next((kind for kind in _ERROR_TYPES if message.startswith(kind)), None)
+            if category is None:
+                if not line.startswith("!"):
+                    continue
+                category = "TeX error"
+        number = None
+        if location and location["file"].replace("\\", "/").rsplit("/", 1)[-1] == (
+            log_file.stem + ".tex"
+        ):
+            number = int(location["line"])
+        errors.append((category, number))
+        if len(errors) >= limit:
+            break
+    return errors
+
+
+def pandoc_failure(proc: subprocess.CompletedProcess[str]) -> str:
+    """Describe a failed invocation without copying stderr into the shareable report."""
+    if proc.returncode == 0:
+        return "no output"
+    if any(line.startswith("Error running filter") for line in proc.stderr.splitlines()):
+        return f"filter failed (exit {proc.returncode})"
+    return f"exit {proc.returncode}"

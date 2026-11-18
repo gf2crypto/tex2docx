@@ -7,7 +7,7 @@ tex_contains:
   - "\\begin{itemize}"
   - "\\begin{enumerate}"
   - "\\begin{tabular}"
-  - "\\includegraphics{images/image1.png}"
+  - "\\includegraphics{images/"
   - "\\[\n  \\sum_{i = 1}^{n}x_{i}\n\\]"   # абзац из одной формулы -> выносная
   - "$x^{2}$ --- и дальше"           # тире Word -> ---
   - "\\caption{Подпись к рисунку}"   # абзац стиля Caption после картинки -> figure (M1)

@@ -200,7 +200,8 @@ def run(ctx: Context) -> None:
     except Exception as e:  # never lose the document: deliver pandoc's version
         shutil.copyfile(ctx.docx, ctx.output)
         ctx.report.warn(STAGE, "postprocess.skipped", type(e).__name__)
-        return
-    for k, v in counts.items():
-        if v:
-            ctx.report.info(STAGE, f"postprocess.{k}", str(v))
+    else:
+        for k, v in counts.items():
+            if v:
+                ctx.report.info(STAGE, f"postprocess.{k}", str(v))
+    ctx.report.output_written = True

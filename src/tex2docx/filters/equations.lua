@@ -66,7 +66,11 @@ local function number_of(tex, labels)
       num:extend(t2d.number(tag, 'equation', label:sub(2, -2), nil))
       num:insert(pandoc.Str((tag_star == '*') and '' or ')'))
     else
-      num = { pandoc.Str((tag_star == '*') and tag or ('(' .. tag .. ')')) }
+      num = pandoc.List(t2d.number_inlines(tag))
+      if tag_star ~= '*' then
+        num:insert(1, pandoc.Str('('))
+        num:insert(pandoc.Str(')'))
+      end
     end
   elseif not (tex:find('\\notag%f[%A]') or tex:find('\\nonumber%f[%A]')) then
     local label = tex:match('\\label%s*(%b{})')

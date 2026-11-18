@@ -51,7 +51,6 @@ def run(ctx: Context) -> None:
     lang, _ = document_language(ctx.tex)
     sc = Sidecar(source=ctx.source.name, language=lang, profile=ctx.config.profile or "")
     names = caption_names(ctx)
-    names["proof"] = ctx.config.proof_name
     sc.names = names
     for env, d in ctx.theorems.items():
         attrs = {k: str(v).lower() if isinstance(v, bool) else str(v)

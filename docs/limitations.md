@@ -15,3 +15,4 @@
 | Документ без babel/polyglossia | язык угадывается по тексту (кириллица → русский): «Рис.», «Аннотация», хотя LaTeX печатал бы «Figure», «Abstract» | по просьбе Владимира (2026-10-28); в отчете `names.language-guessed`; `figure_name`/`table_name` в конфиге переопределяют |
 | Картинки BMP/TIFF/GIF/WebP | PNG через Pillow или ImageMagick, если есть; иначе `figures.unsupported-format` | Word и pandoc их не вставляют; картинка, которой нет на диске, берется с тем же именем в другом формате (`figures.substituted`) |
 | Формулы с `\sideset`, `\prescript`, `\smash`, `\raisebox`, `\mathpalette`, tikz внутри формулы | картинка PNG (`pandoc.math-as-image`) | texmath их не знает; картинка в строке стоит на базовой линии, без «глубины» |
+| `\includeonly` | склейка включает только выбранные главы, номера вычисляются при новой сборке | сохраненные счетчики из старых `.aux` пропущенных глав не подхватываются |

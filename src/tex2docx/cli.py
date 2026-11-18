@@ -22,7 +22,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--profile", choices=["default", "standard"],
                    help="bundled Word template: standard = Times New Roman 14, 1.5 spacing, "
                         "no paragraph spacing, black headings")
-    p.add_argument("--workdir", type=Path, help="keep intermediate files in this directory")
+    p.add_argument("--workdir", type=Path,
+                   help="keep intermediate files in a new subdirectory here")
     p.add_argument("--keep-workdir", action="store_true",
                    help="do not delete the temporary working directory")
     p.add_argument("--version", action="version", version=f"tex2docx {__version__}")
@@ -43,8 +44,8 @@ def main(argv: list[str] | None = None) -> int:
 
     report = convert(a.source, output, config, workdir=a.workdir, keep_workdir=a.keep_workdir)
     c = report.counts()
-    status = "FAILED" if not output.exists() else "ok"
+    status = "ok" if report.output_written else "FAILED"
     print(f"{status}: {output}")
-    print(f"report: {output.with_suffix('.report.md')} "
+    print(f"report: {report.paths(output)[1]} "
           f"(errors {c['error']}, warnings {c['warning']}, notes {c['info']})")
-    return 1 if not output.exists() else 0
+    return 0 if report.output_written else 1

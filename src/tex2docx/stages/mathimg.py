@@ -52,8 +52,8 @@ def render(ctx: Context, failed: list[dict]) -> dict[str, str]:
         pdf = d / "math.pdf"
         if not pdf.exists():
             ctx.report.error(STAGE, "mathimg.compile-failed")
-            for err in log_errors(d / "math.log"):
-                ctx.report.warn(STAGE, "latex.log", err)
+            for category, _ in log_errors(d / "math.log"):
+                ctx.report.warn(STAGE, "latex.log", category)
             return {}
         run_tool([require("pdftoppm"), "-r", str(ctx.config.figure_dpi), "-png",
                   pdf.name, "m"], cwd=d)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import __version__
 from .config import Config
-from .pipeline import convert
+from .pipeline import OutputConflictError, convert
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -21,18 +21,25 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--standalone", action="store_true",
                    help="also write <out>.standalone.tex with a preamble and compile it as a check")
     p.add_argument("--engine", choices=["pdflatex", "xelatex", "lualatex"])
-    p.add_argument("--workdir", type=Path)
+    p.add_argument("--workdir", type=Path,
+                   help="keep intermediate files in a new subdirectory here")
     p.add_argument("--version", action="version", version=f"docx2tex {__version__}")
     a = p.parse_args(argv)
     config = Config.load(a.config)
     if a.engine:
         config.engine = a.engine
-    output = a.output or (a.into.parent / (a.source.stem + ".tex") if a.into else a.source.with_suffix(".tex"))
-    report = convert(a.source, output, config, standalone=a.standalone, workdir=a.workdir, into=a.into)
+    directory = a.into.parent if a.into else a.source.parent
+    output = a.output or directory / (a.source.stem + ".tex")
+    try:
+        report = convert(
+            a.source, output, config, standalone=a.standalone, workdir=a.workdir, into=a.into
+        )
+    except OutputConflictError as e:
+        p.exit(1, f"docx2tex: {e}\n")
     c = report.counts()
-    print(f"{'ok' if output.exists() else 'FAILED'}: {output}")
-    print(f"report: {output.with_suffix('.report.md')} "
+    print(f"{'ok' if report.output_written else 'FAILED'}: {output}")
+    print(f"report: {report.paths(output)[1]} "
           f"(errors {c['error']}, warnings {c['warning']}, notes {c['info']})")
-    if a.into and output.exists():
+    if a.into and report.output_written:
         print(f"add to {a.into.name}: \\input{{{output.stem}}}")
-    return 0 if output.exists() else 1
+    return 0 if report.output_written else 1
