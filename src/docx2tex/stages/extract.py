@@ -5,6 +5,8 @@ Status: implemented (M0): bookmarks (name -> plain text inside), simple fields
 (sidecar, config, else guessed from the text). M1: the working copy
 workdir/prepared.docx with markers for pandoc (stages/prepare.py). M2: OLE formulas
 (Equation Editor, MathType) counted into math.not-omml - they stay pictures.
+Tracked changes (w:ins/w:del, moves) are accepted by pandoc: counted into
+extract.tracked-changes so that the author knows the fragment shows them accepted.
 """
 
 from __future__ import annotations
@@ -59,6 +61,16 @@ def count_ole_formulas(xml: bytes) -> int:
                if re.match(r"Equation|MathType", o.get("ProgID", ""), re.I))
 
 
+def count_tracked_changes(xml: bytes) -> tuple[int, int]:
+    """(insertions, deletions) of text recorded with track changes on."""
+    from lxml import etree
+
+    root = etree.fromstring(xml)
+    ins = sum(1 for tag in ("ins", "moveTo") for _ in root.iter(f"{{{W}}}{tag}"))
+    dels = sum(1 for tag in ("del", "moveFrom") for _ in root.iter(f"{{{W}}}{tag}"))
+    return ins, dels
+
+
 def run(ctx: Context) -> None:
     if not ctx.source.is_file():
         raise StageError("extract.no-source", str(ctx.source))
@@ -70,6 +82,9 @@ def run(ctx: Context) -> None:
     ctx.bookmarks, ctx.fields, plain = read_facts(xml)
     if n_ole := count_ole_formulas(xml):
         ctx.report.warn(STAGE, "math.not-omml", str(n_ole))
+    ins, dels = count_tracked_changes(xml)
+    if ins or dels:  # pandoc accepts them all: the fragment is the text after the changes
+        ctx.report.warn(STAGE, "extract.tracked-changes", f"ins={ins} del={dels}")
     sc = Sidecar.load(Sidecar.path_for(ctx.source))
     if sc is not None:
         ctx.sidecar = sc

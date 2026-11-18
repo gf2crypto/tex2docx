@@ -32,9 +32,13 @@ local theorem_titles = {} -- env -> title as declared
 local names = {}
 local cites = {}
 local has_bib = false
+local bib_count = 0  -- entries in the bibliography list (0: unknown)
 local numbered_levels = {}
 local link_labels = {}   -- "(2.5)" -> label, from the references in the text (for subequations)
 local header_labels = {} -- heading identifier -> its label (pandoc 3.12 points links at the identifier)
+-- headings without a label of their own that a link points at (a heading bookmarked by pandoc
+-- or Word, not by tex2docx): identifier -> heading, bookmark name -> identifier; made labels
+local unlabeled_headers, header_by_bookmark, made_header_labels = {}, {}, {}
 local bookmarked = {}    -- label -> true when a bookmark carries it
 
 local stringify = pandoc.utils.stringify
@@ -131,6 +135,47 @@ local function split_markers(inlines)
   return changed and out or nil
 end
 
+-- U+E004 (stages/prepare.py): the paragraph continues the list item before it (a theorem
+-- or a second paragraph inside \item); pandoc made a list of its own out of it
+local MC = '\u{E004}'
+
+local function is_list(b) return b and (b.t == 'BulletList' or b.t == 'OrderedList') end
+
+-- strip the marker from the first inline of an item; true when it was there
+local function take_continuation(blocks)
+  local b = blocks[1]
+  while b and b.t == 'Div' do b = b.content[1] end
+  if not b or (b.t ~= 'Para' and b.t ~= 'Plain') then return false end
+  local first = b.content[1]
+  if not first or first.t ~= 'Str' or first.text:sub(1, #MC) ~= MC then return false end
+  first.text = first.text:sub(#MC + 1)
+  if first.text == '' then b.content:remove(1) end
+  return true
+end
+
+local function merge_continuations(blocks)
+  local out, open, changed = pandoc.List(), nil, false
+  for _, b in ipairs(blocks) do
+    local prev = out[#out]
+    if is_list(b) and is_list(prev) and take_continuation(b.content[1]) then
+      -- every paragraph of this pseudo-list goes into the last item of the list before
+      local last = prev.content[#prev.content]
+      for k, item in ipairs(b.content) do
+        if k > 1 then take_continuation(item) end
+        last:extend(item)
+      end
+      open, changed = prev, true
+    elseif is_list(b) and open and prev == open and prev.t == b.t then
+      prev.content:extend(b.content)  -- the list goes on after the continuation
+      changed = true
+    else
+      out:insert(b)
+      open = nil
+    end
+  end
+  return changed and out or nil
+end
+
 local function is_label(x) return x.t == 'Span' and x.classes:includes('t2d-label') end
 
 -- the label a marker stands for: resolved at once, or (Word's own cross-reference bookmarks
@@ -190,11 +235,14 @@ local function clean_inlines(inlines)
     elseif x.t == 'Space' and (#out == 0 or out[#out].t == 'Space') then
       -- skip
     elseif (x.t == 'Strong' or x.t == 'Emph') and #out > 0 and out[#out].t == x.t then
-      local merged = pandoc.List(out[#out].content)
+      -- a new list: pandoc.List(t) would reuse t and grow the element inside the document
+      local merged = pandoc.List()
+      merged:extend(out[#out].content)
       merged:extend(x.content)
       out[#out] = x.t == 'Strong' and pandoc.Strong(merged) or pandoc.Emph(merged)
     elseif (x.t == 'Strong' or x.t == 'Emph') and #out > 1 and out[#out].t == 'Space' and out[#out - 1].t == x.t then
-      local merged = pandoc.List(out[#out - 1].content)
+      local merged = pandoc.List()
+      merged:extend(out[#out - 1].content)
       merged:insert(pandoc.Space())
       merged:extend(x.content)
       out:remove(#out)
@@ -259,8 +307,12 @@ local function strip_matrix(tex)
   local inner = tex:match('^%s*\\begin{matrix}%s*(.-)%s*\\end{matrix}%s*$')
     or tex:match('^%s*\\begin{aligned}%s*(.-)%s*\\end{aligned}%s*$')  -- pandoc 3.12
   if not inner then return tex, false, false end
-  local rows = inner:find('\\\\') ~= nil
-  return inner, (not rows) and inner:find('&') ~= nil, rows
+  -- only top-level & and \\ count: a line with cases/pmatrix in it is still one align line
+  local top, n = inner, 0
+  repeat top, n = top:gsub('\\begin(%b{}).-\\end%1', '') until n == 0
+  top = top:gsub('%b{}', '{}')
+  local rows = top:find('\\\\') ~= nil
+  return inner, (not rows) and top:find('&') ~= nil, rows
 end
 
 -- Equation paragraph: formula, then the number "(2.1)" / a tag "(A)" / "B" (tex2docx
@@ -296,6 +348,19 @@ local function parse_equation(para, strict)
   local body, aligned, rows = strip_matrix(math.text)
   body = trim(body:gsub('%s*\n%s*', ' '))
   return { body = body, aligned = aligned, rows = rows, num = num, tag = tag or '', labels = labels }
+end
+
+-- a plain paragraph "formula <tab> (2.1)": the number typed by hand. It stays the same
+-- number (\tag), so the hand-typed references "(2.1)" in the text keep pointing at it
+local function typed_equation(para)
+  if para.t ~= 'Para' then return nil end
+  local eq = parse_equation(para)
+  if not eq or not eq.num or eq.tag ~= '' then return nil end
+  local inner = eq.num:match('^%((%d[%d%.]*%a?)%)$')
+  if not inner then return nil end
+  eq.tag = '\\tag{' .. inner .. '}'
+  report('info', 'equation.typed-number', inner)
+  return eq
 end
 
 local function sub_base(it)
@@ -442,7 +507,7 @@ local in_theorem = 0  -- inside a theorem/proof the "bold word" heuristics are o
 
 local function emit_theorem(div, style, process, extra)
   local labels, body = take_labels(div)
-  local inner = pandoc.List(body.content)
+  local inner = pandoc.List(); inner:extend(body.content)
   if extra then inner:extend(extra) end
   in_theorem = in_theorem + 1
   local content = process(inner)
@@ -499,20 +564,49 @@ local function text_proof(para)
   return false
 end
 
-local function emit_proof(div, process)
+-- a proof paragraph that starts with its head (italic "Доказательство.", "Proof of Theorem 1.")
+local function has_proof_head(div)
+  local p = div.content and div.content[1]
+  if not p or (p.t ~= 'Para' and p.t ~= 'Plain') then return false end
+  local h = clean_inlines(p.content)[1]
+  return h ~= nil and (h.t == 'Emph' or h.t == 'Strong')
+end
+
+local function is_proof_name(text)
+  if names.proof and text == names.proof then return true end
+  for _, n in ipairs(PROOF_NAMES) do if text == n then return true end end
+  return false
+end
+
+local function emit_proof(div, process, extra)
   local _, body = take_labels(div)
+  local inner = pandoc.List(); inner:extend(body.content)
+  if extra then inner:extend(extra) end
   in_theorem = in_theorem + 1
-  local content = process(body.content)
+  local content = process(inner)
   in_theorem = in_theorem - 1
   local first = content[1]
+  local note
   if first and first.t == 'Para' then
     local ins = clean_inlines(first.content)
     local h = ins[1]
     if h and (h.t == 'Emph' or h.t == 'Strong') then
       ins:remove(1)
       while ins[1] and (ins[1].t == 'Space' or (ins[1].t == 'Str' and ins[1].text == '.')) do ins:remove(1) end
+      -- \begin{proof}[Доказательство теоремы~\ref{..}]: a head that is not the plain name
+      local htext = trim(stringify(h)):gsub('%.$', '')
+      if htext ~= '' and not is_proof_name(htext) then
+        local hins = pandoc.Inlines(h.content)
+        local lastx = hins[#hins]
+        if lastx and lastx.t == 'Str' and lastx.text:sub(-1) == '.' then
+          lastx.text = lastx.text:sub(1, -2)
+          if lastx.text == '' then hins:remove(#hins) end
+        end
+        note = write_inlines(hins)
+      end
     end
     first.content = ins
+    if #ins == 0 then table.remove(content, 1) end
   end
   local last = content[#content]
   if last and (last.t == 'Para' or last.t == 'Plain') then
@@ -525,7 +619,7 @@ local function emit_proof(div, process)
     last.content = ins
     if #ins == 0 then content[#content] = nil end
   end
-  local out = { raw('\\begin{proof}') }
+  local out = { raw('\\begin{proof}' .. (note and ('[' .. note .. ']') or '')) }
   for _, b in ipairs(content) do out[#out + 1] = b end
   out[#out + 1] = raw('\\end{proof}')
   return out
@@ -584,13 +678,23 @@ local function emit_figure(img, caption_para)
   return raw(table.concat(lines, '\n'))
 end
 
+-- a line break typed in a cell: \\ would end the table row, so the lines go into a
+-- one-column tabular of their own (standard LaTeX, no makecell)
+local CELL_BREAK = '\u{E0FF}'
+
 local function cell_text(cell)
   local blocks = cell.contents or cell.content
   local parts = {}
+  local broken = false
   for _, b in ipairs(blocks) do
+    b = b:walk { LineBreak = function() broken = true; return pandoc.Str(CELL_BREAK) end }
     parts[#parts + 1] = pandoc.write(pandoc.Pandoc({ b }), 'latex'):gsub('\n$', '')
   end
-  return table.concat(parts, ' ')
+  local text = table.concat(parts, ' ')
+  if broken then
+    text = '\\begin{tabular}[t]{@{}l@{}}' .. text:gsub('%s*' .. CELL_BREAK .. '%s*', '\\\\') .. '\\end{tabular}'
+  end
+  return text
 end
 
 -- plain tabular with l columns and \hline, when no cell spans; nil otherwise
@@ -859,7 +963,99 @@ local function is_bib_header(b)
   return false
 end
 
+-- ---------------------------------------------------------------------------
+-- Unicode pdflatex cannot take (T2A + utf8): symbols texmath leaves in formulas, signs in text
+
+local MATH_CHARS = {
+  ['\u{2284}'] = '\\not\\subset', ['\u{2285}'] = '\\not\\supset', ['\u{220C}'] = '\\not\\ni',
+  ['\u{2262}'] = '\\not\\equiv', ['\u{2241}'] = '\\not\\sim', ['\u{2244}'] = '\\not\\simeq',
+  ['\u{226E}'] = '\\not<', ['\u{226F}'] = '\\not>', ['\u{2209}'] = '\\notin',
+  ['\u{2212}'] = '-', ['\u{2216}'] = '\\setminus', ['\u{2032}'] = "'",
+}
+local TEXT_CHARS = {
+  ['\u{2212}'] = '$-$', ['\u{2264}'] = '$\\leq$', ['\u{2265}'] = '$\\geq$', ['\u{2260}'] = '$\\neq$',
+  ['\u{2248}'] = '$\\approx$', ['\u{00D7}'] = '$\\times$', ['\u{2192}'] = '$\\to$', ['\u{221E}'] = '$\\infty$',
+}
+
+-- a command ending in a letter gets a space before a following letter (\not\subset A)
+local function map_math_chars(s)
+  local out, need_space, changed = {}, false, false
+  for _, c in utf8.codes(s) do
+    local ch = utf8.char(c)
+    local rep = MATH_CHARS[ch]
+    if need_space and ch:match('^%a$') then out[#out + 1] = ' ' end
+    need_space = false
+    if rep then
+      out[#out + 1] = rep
+      need_space = rep:match('%a$') ~= nil
+      changed = true
+    else
+      out[#out + 1] = ch
+    end
+  end
+  return changed and table.concat(out) or nil
+end
+
+-- texmath reads an empty OMML delimiter as "\left. \ " / "\right.\ "; written back, the
+-- control space is a space run inside the delimiter and comes back doubled next round
+local function strip_delimiter_spaces(s)
+  local n, total = 0, 0
+  repeat s, n = s:gsub('\\left%.%s*\\%s', '\\left. '); total = total + n until n == 0
+  repeat s, n = s:gsub('\\right%.%s*\\%s', '\\right.'); total = total + n until n == 0
+  return s, total
+end
+
+-- upright letters marked by stages/prepare.py (U+E005 .. U+E006): function names texmath
+-- does not know -> \operatorname, a single letter or letters of separate runs -> \mathrm
+local UP_OPEN, UP_CLOSE, UP_JOIN = '\u{E005}', '\u{E006}', '\u{E007}'
+local KNOWN_FUNCTIONS = {}
+for w in ('arccos arcsin arctan arg cos cosh cot coth csc deg det dim exp gcd hom inf ker lg lim '
+          .. 'liminf limsup ln log max min Pr sec sin sinh sup tan tanh'):gmatch('%S+') do
+  KNOWN_FUNCTIONS[w] = true
+end
+
+local function upright_letters(s)
+  if not s:find(UP_OPEN, 1, true) then return s end
+  s = s:gsub(UP_CLOSE .. UP_OPEN, UP_JOIN)  -- \mathrm{GF}: one run per letter
+  return (s:gsub(UP_OPEN .. '(.-)' .. UP_CLOSE, function(word)
+    if word:find(UP_JOIN, 1, true) or not word:find('^%a%a') then
+      return '\\mathrm{' .. word:gsub(UP_JOIN, '') .. '}'
+    end
+    word = word:gsub('\u{2006}', '\\,'):gsub('\u{2009}', '\\,')
+    if KNOWN_FUNCTIONS[word] then return '\\' .. word .. ' ' end
+    return '\\operatorname{' .. word .. '}'
+  end))
+end
+
+local function unicode_math(m)
+  local s = upright_letters(map_math_chars(m.text) or m.text)
+  local stripped, n = strip_delimiter_spaces(s)
+  if stripped ~= m.text then m.text = stripped; return m end
+end
+
+local function unicode_text(str)
+  local out, buf, changed = pandoc.List(), {}, false
+  for _, c in utf8.codes(str.text) do
+    local ch = utf8.char(c)
+    local rep = TEXT_CHARS[ch]
+    if rep then
+      if #buf > 0 then out:insert(pandoc.Str(table.concat(buf))); buf = {} end
+      out:insert(pandoc.RawInline('latex', rep))
+      changed = true
+    else
+      buf[#buf + 1] = ch
+    end
+  end
+  if not changed then return nil end
+  if #buf > 0 then out:insert(pandoc.Str(table.concat(buf))) end
+  return out
+end
+
 local function cite_key(n) return cites[n] or ('bib:' .. n) end
+
+-- "[1–3]": a range of citations (hyphen, en dash, em dash)
+local RANGE_DASH = '[%-\u{2013}\u{2014}]+'
+local MAX_RANGE = 50
 
 local function emit_thebibliography(entries)
   local widest = #entries < 10 and '9' or (#entries < 100 and '99' or '999')
@@ -887,8 +1083,11 @@ local function cite_inlines(inlines)
       local ok = true
       for part in (inner .. ','):gmatch('%s*([^,]-)%s*,') do
         local p = trim(part)
+        local a, b = p:match('^(%d+)%s*' .. RANGE_DASH .. '%s*(%d+)$')
         if p:match('^%d+$') then
           nums[#nums + 1] = p
+        elseif a and tonumber(a) < tonumber(b) and tonumber(b) - tonumber(a) <= MAX_RANGE then
+          for n = tonumber(a), tonumber(b) do nums[#nums + 1] = tostring(n) end
         elseif #nums > 0 and not note then
           note = p
         else
@@ -896,17 +1095,25 @@ local function cite_inlines(inlines)
           break
         end
       end
+      -- a number past the end of the list is not a citation we can resolve: keep the text
+      for _, n in ipairs(nums) do
+        if ok and bib_count > 0 and tonumber(n) > bib_count then
+          report('warning', 'cite.unknown-number', n)
+          ok = false
+        end
+      end
+      -- the text before the brackets is kept either way
+      pieces[#pieces + 1] = text:sub(pos, s - 1)
       if ok and #nums > 0 then
         changed = true
-        pieces[#pieces + 1] = text:sub(pos, s - 1)
         local keys = {}
         for _, n in ipairs(nums) do keys[#keys + 1] = cite_key(n) end
         local opt = note and ('[' .. note:gsub(NBSP, '~') .. ']') or ''
         pieces[#pieces + 1] = { '\\cite' .. opt .. '{' .. table.concat(keys, ',') .. '}' }
-        pos = e + 1
       else
-        pos = e
+        pieces[#pieces + 1] = text:sub(s, e)
       end
+      pos = e + 1
     end
     pieces[#pieces + 1] = text:sub(pos)
     for _, p in ipairs(pieces) do
@@ -960,6 +1167,7 @@ end
 
 local function emit_header(h)
   local labels, hh = take_labels(h)
+  if #labels == 0 and made_header_labels[h.identifier] then labels = { made_header_labels[h.identifier] } end
   local content, numbered = header_number(clean_inlines(hh.content))
   local star = (not numbered) and numbered_levels[h.level] and '*' or ''
   local cmd = LEVELS[h.level] or 'paragraph'
@@ -1061,7 +1269,8 @@ process = function(blocks)
     local st = style_of(b)
     local para = (b.t == 'Div' and #b.content == 1) and b.content[1] or b
     local eq = (st == 'Equation' and para.t == 'Para') and parse_equation(para)
-      or (b.t == 'Para' and only_math(b) and parse_equation(b, true)) or nil
+      or (b.t == 'Para' and only_math(b) and parse_equation(b, true))
+      or (st == nil and in_theorem == 0 and typed_equation(b)) or nil
     if eq then
       local items = { eq }
       while i < #blocks do
@@ -1069,7 +1278,8 @@ process = function(blocks)
         local nst = style_of(nb)
         local np = (nb.t == 'Div' and #nb.content == 1) and nb.content[1] or nb
         local ne = (nst == 'Equation' and np.t == 'Para') and parse_equation(np)
-          or (nb.t == 'Para' and only_math(nb) and parse_equation(nb, true)) or nil
+          or (nb.t == 'Para' and only_math(nb) and parse_equation(nb, true))
+          or (nst == nil and in_theorem == 0 and typed_equation(nb)) or nil
         if not ne then break end
         items[#items + 1] = ne
         i = i + 1
@@ -1115,6 +1325,9 @@ process = function(blocks)
     elseif b.t == 'Para' and in_theorem == 0 and text_theorem(b) then
       local title = text_theorem(b)
       report('info', 'theorem.by-text', title)
+      -- "Лемма 2" typed by hand: LaTeX numbers it anew, references in the text may not match
+      local typed = trim(stringify(clean_inlines(b.content)[1])):match('([%d%.]*%d)%.?$')
+      if typed then report('warning', 'theorem.typed-number', title .. ' ' .. typed) end
       push(emit_theorem(pandoc.Div({ b }), title, process))
     elseif b.t == 'Para' and in_theorem == 0 and text_proof(b) then
       report('info', 'proof.by-text', '')
@@ -1145,7 +1358,21 @@ process = function(blocks)
       end
       push(emit_theorem(b, st, process, extra))
     elseif st == 'Proof' then
-      push(emit_proof(b, process))
+      -- the proof goes on over its display formulas and further Proof paragraphs without a head
+      local extra
+      while true do
+        local j = i + 1
+        while blocks[j] and (style_of(blocks[j]) == 'Equation' or (blocks[j].t == 'Para' and only_math(blocks[j]))) do
+          j = j + 1
+        end
+        local nxt = blocks[j]
+        if not (nxt and nxt.t == 'Div' and style_of(nxt) == 'Proof' and not has_proof_head(nxt)) then break end
+        extra = extra or {}
+        for q = i + 1, j - 1 do extra[#extra + 1] = blocks[q] end
+        for _, blk in ipairs(nxt.content) do extra[#extra + 1] = blk end
+        i = j
+      end
+      push(emit_proof(b, process, extra))
     elseif is_bib_header(b) and blocks[i + 1] and blocks[i + 1].t == 'OrderedList' then
       push({ emit_thebibliography(blocks[i + 1].content) })
       i = i + 1
@@ -1205,7 +1432,9 @@ local function front_matter(meta)
       '% \\title{' .. write_inlines(meta.title) .. '}' }
     if meta.author then
       local authors = meta.author
-      if authors.t == 'MetaList' or (type(authors) == 'table' and authors[1] and authors[1].t == 'MetaInlines') then
+      -- several authors: MetaList in pandoc 2, a plain List of Inlines in pandoc 3
+      local kind = pandoc.utils.type(authors)
+      if kind == 'List' or authors.t == 'MetaList' then
         local parts = {}
         for _, a in ipairs(authors) do parts[#parts + 1] = write_inlines(a) end
         lines[#lines + 1] = '% \\author{' .. table.concat(parts, ' \\and ') .. '}'
@@ -1243,6 +1472,15 @@ function Pandoc(doc)
     if attrs.title then theorem_envs[lower(attrs.title)] = env end
   end
 
+  -- 0. list item continuations back into their items; stray continuation markers dropped
+  doc = doc:walk { Blocks = merge_continuations }
+  doc = doc:walk { Str = function(x)
+    if x.text:find(MC, 1, true) or x.text:find('\u{E005}', 1, true) or x.text:find('\u{E006}', 1, true) then
+      x.text = x.text:gsub(MC, ''):gsub('\u{E005}', ''):gsub('\u{E006}', '')
+      return x
+    end
+  end }
+
   -- 1. markers -> label/tab spans; pandoc's anchors dropped; images without attributes
   doc = doc:walk {
     Inlines = split_markers,
@@ -1260,8 +1498,10 @@ function Pandoc(doc)
   -- without a label of their own (pandoc 3.12 hashes Div identifiers) take the first label
   -- found inside their extent (the theorem's own number, the figure's caption)
   has_bib = false
+  bib_count = 0
   numbered_levels = {}
   header_labels = {}
+  unlabeled_headers, header_by_bookmark, made_header_labels = {}, {}, {}
   name_labels = {}
   local open = {}
   local function learn(inlines, style, is_header)
@@ -1308,13 +1548,21 @@ function Pandoc(doc)
   learn_blocks(doc.blocks, nil)
   for i, b in ipairs(doc.blocks) do
     if b.t == 'Header' then
-      local hl = take_labels(b)
+      local hl, _, bm_names = take_labels(b)
       if hl[1] and b.identifier ~= '' then header_labels[b.identifier] = hl[1] end
+      if not hl[1] and b.identifier ~= '' then
+        unlabeled_headers[b.identifier] = b
+        for _, n in ipairs(bm_names) do header_by_bookmark[n] = b.identifier end
+      end
       local _, numbered = header_number(clean_inlines(b.content))
       if numbered then numbered_levels[b.level] = true end
-      if is_bib_header(b) and doc.blocks[i + 1] and doc.blocks[i + 1].t == 'OrderedList' then has_bib = true end
+      if is_bib_header(b) and doc.blocks[i + 1] and doc.blocks[i + 1].t == 'OrderedList' then
+        has_bib = true
+        bib_count = bib_count + #doc.blocks[i + 1].content
+      end
     elseif style_of(b) == 'Bibliography' then
       has_bib = true
+      bib_count = bib_count + 1
     end
   end
 
@@ -1324,7 +1572,17 @@ function Pandoc(doc)
       local target = link.target
       if target:sub(1, 1) ~= '#' then return nil end
       local name = target:sub(2)
-      local label = header_labels[name] or name_labels[name] or resolve_label(name)
+      local hid = (unlabeled_headers[name] and name) or header_by_bookmark[name]
+      if hid and not header_labels[hid] then
+        -- a link to a heading that has no label: make one from its text, \label it there
+        local base = word_ref_label(unlabeled_headers[hid].content, nil, true, '')
+        local l, k = base, 1
+        while bookmarked[l] do k = k + 1; l = base .. '-' .. k end
+        bookmarked[l] = true
+        header_labels[hid], made_header_labels[hid] = l, l
+        report('info', 'label.heading-made', l)
+      end
+      local label = (hid and header_labels[hid]) or header_labels[name] or name_labels[name] or resolve_label(name)
       local text = trim(stringify(link.content))
       if not label then
         report('info', 'link.unresolved', target:sub(2))
@@ -1339,10 +1597,31 @@ function Pandoc(doc)
       if word and word ~= '' and not word:match('[%d%p]$') then
         return pandoc.RawInline('latex', word .. '~\\ref{' .. label .. '}')
       end
+      -- a link whose text is words, not a number ("см. раздел"): the words stay
+      if text ~= '' and not text:find('%d') then
+        local words = pandoc.Inlines(link.content):walk { Span = function(sp) return sp.content end }
+        return pandoc.RawInline('latex', '\\hyperref[' .. label .. ']{' .. write_inlines(words) .. '}')
+      end
       return pandoc.RawInline('latex', '\\ref{' .. label .. '}')
     end,
   }
   if has_bib then doc = doc:walk { Inlines = cite_inlines } end
+  -- Unicode that texmath and the writer leave as is and pdflatex cannot typeset
+  doc = doc:walk { Math = unicode_math, Str = unicode_text }
+  -- footnotes: Word starts each with a space after the mark; equations, theorems inside
+  -- are processed like the body's (labels of formulas in footnotes come back)
+  doc = doc:walk { Note = function(note)
+    local first = note.content[1]
+    while first and first.t == 'Div' do first = first.content[1] end
+    if first and (first.t == 'Para' or first.t == 'Plain') then
+      local c = first.content
+      -- the space and the mark's own style span ("Footnote Reference", blank) go
+      while c[1] and (c[1].t == 'Space' or ((c[1].t == 'Str' or c[1].t == 'Span')
+                      and trim(stringify(c[1])) == '')) do c:remove(1) end
+    end
+    note.content = pandoc.Blocks(process(note.content))
+    return note
+  end }
 
   -- 4. blocks
   local blocks = front_matter(doc.meta)

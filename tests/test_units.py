@@ -174,6 +174,12 @@ def test_babel_shorthands():
     assert normalize_text(r'\"o') == r'\"o'
 
 
+def test_qedhere_is_dropped():
+    # texmath does not know \qedhere: the formula would go as a picture
+    assert normalize_text("\\[ |C| \\le q^{n-d+1}. \\qedhere \\]") == "\\[ |C| \\le q^{n-d+1}.  \\]"
+    assert normalize_text("\\\\qedhere") == "\\\\qedhere"  # a line break, then text
+
+
 def test_normalize_guillemets_and_second_title():
     assert normalize_text('АО <<НПК <<Криптонит>>') == "АО «НПК «Криптонит»"
     src = "\\title{A}\\author{B}\\maketitle\n\\title{Eng {t}}\n\\author{C}\\maketitleeng\n"
@@ -495,6 +501,31 @@ def test_simple_macros_and_fold_back():
     assert out == r"$\F_q^n$, $\mathbf{G}x$, $\rank\mathbf{G}$, \F{}x"  # {} keeps the letter apart
     assert n == 3
     assert sorted(ambiguous) == ["\\matr", "\\vect"]  # two names, one body: left alone
+
+
+def test_docx2tex_normalize_drops_pandocbounded():
+    from docx2tex.stages.normalize import normalize_text
+
+    tex = r"знак \pandocbounded{\includegraphics[keepaspectratio]{media/image1.png}} в строке"
+    out = normalize_text(tex)
+    assert out == "знак \\includegraphics{images/image1.png} в строке\n"
+    assert normalize_text(out) == out  # idempotent
+
+
+def test_docx2tex_packages_of_folded_macros():
+    from docx2tex.stages.emit import needed_packages
+
+    macros = {"\\F": "\\mathbb{F}", "\\Lie": "\\mathfrak{g}"}
+    assert needed_packages(r"$\F_q^n$", macros) == ["amsmath", "amssymb"]
+    assert needed_packages(r"$\Fq$", macros) == []  # another name, not \F
+    assert needed_packages(r"\ul{x} $\begin{pmatrix} 1 \end{pmatrix}$") == ["amsmath", "soul"]
+
+
+def test_docx2tex_unsupported_chars_for_pdflatex():
+    from docx2tex.stages.emit import unsupported_chars
+
+    assert unsupported_chars("Текст — «елка» ü № … $x \\leq y$") == []
+    assert unsupported_chars("$A ⊄ B$, −5, α") == ["U+03B1", "U+2212", "U+2284"]
 
 
 # --- docx2tex --into: the main document and its .bib (M3) ----------------------

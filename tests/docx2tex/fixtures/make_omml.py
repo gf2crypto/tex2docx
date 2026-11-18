@@ -11,7 +11,11 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 FORMULAS = {"inline-x2": "$x^2$", "display-sum": r"$$\sum_{i=1}^{n} x_i$$",
-            "bold-G": r"$\mathbf{G}\mathbf{x} \in \mathbb{F}_q^n$"}
+            "bold-G": r"$\mathbf{G}\mathbf{x} \in \mathbb{F}_q^n$",
+            "not-subset": r"$\mathfrak{g} \not\subset A$",
+            "pmatrix": r"$\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}$",
+            "operators": r"$\operatorname{rank} G + a \bmod b + \mathrm{d}x + \sin x"
+                         r" + \mathrm{GF}(2)$"}
 NS = ('xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" '
       'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"')
 

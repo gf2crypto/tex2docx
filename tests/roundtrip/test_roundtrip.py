@@ -10,6 +10,7 @@ Checks, per docs/docx2tex/roundtrip-contract.md:
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import shutil
 from pathlib import Path
@@ -23,7 +24,7 @@ from ..docxprobe import DocxProbe
 
 CORPUS = Path(__file__).parents[1] / "corpus"
 # cases whose body can be swapped (single file, no personal texmf, pdflatex)
-CASES = ["basic", "numbering", "thmtools", "livenumbers", "thebib", "template"]
+CASES = ["basic", "numbering", "thmtools", "livenumbers", "thebib", "template", "roundtrip-stress"]
 
 needs_all = pytest.mark.skipif(
     importlib.util.find_spec("docx2tex") is None
@@ -51,6 +52,10 @@ def test_roundtrip(case: str, tmp_path: Path):
     tex_to_docx(main, a_docx)
     a_tex = work / "a.tex"
     docx_to_tex(a_docx, a_tex)
+    # theorem names come back without their numbers ("Лемма", not "Лемма 2.3")
+    report = json.loads(a_tex.with_suffix(".report.json").read_text(encoding="utf-8"))
+    titles = [i["detail"] for i in report if i["code"] == "emit.newtheorem"]
+    assert not [t for t in titles if re.search(r"\d", t)], f"{case}: numbered names {titles}"
 
     # 1. same numbering after compiling the fragment inside the original preamble
     round1 = work / "round1.tex"

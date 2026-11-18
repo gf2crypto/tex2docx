@@ -57,6 +57,8 @@ def test_strict(converted):
     codes = {i["code"] for i in report}
     bad = codes & set(expect.get("report_absent", []))
     assert not bad, f"{case}: report has {bad}"
+    missing = set(expect.get("report_has", [])) - codes
+    assert not missing, f"{case}: report lacks {missing}"
     if expect.get("compiles"):
         assert not any(i["code"] == "check.compile-errors" for i in report), f"{case}: does not compile"
     for pkg in expect.get("packages", []):
